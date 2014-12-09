@@ -24,6 +24,7 @@
 use std::sync::Mutex;
 use std::cell::RefCell;
 use internal::task;
+use level;
 
 lazy_static!(
   static ref GLOBAL_LOGGER_ACCESS: Mutex<Option<Artifact>> = Mutex::new(None);
@@ -37,7 +38,25 @@ pub struct Artifact{
 }
 
 pub fn init_global_task(){
-  *GLOBAL_LOGGER_ACCESS.lock() = Some(spawn_logger_task());
+  let mut g_logger = GLOBAL_LOGGER_ACCESS.lock();
+  if g_logger.is_none() {
+    let logger_task_sender = spawn_logger_task();
+    register_level(&logger_task_sender, "TERRIBLE FAILURE", level::WTF);
+    register_level(&logger_task_sender, "CRITICAL", level::CRITICAL);
+    register_level(&logger_task_sender, "SEVERE", level::SEVERE);
+    register_level(&logger_task_sender, "WARNING", level::WARNING);
+    register_level(&logger_task_sender, "DEBUG", level::DEBUG);
+    register_level(&logger_task_sender, "INFO", level::INFO);
+    register_level(&logger_task_sender, "VERBOSE", level::VERBOSE);
+
+    *g_logger = Some(logger_task_sender);
+  }
+}
+
+fn register_level(artifact_state: &Artifact,
+                  name: &str,
+                  level: level::LogLevel) {
+  artifact_state.msg_tx.send(task::LoggerMessage::RegisterLevelString(level, name.to_string()))
 }
 
 pub fn stop_global_task(){
@@ -73,7 +92,7 @@ fn send_logger_message_with_uninit_tls(tls_ref:&mut Option<Artifact>, message: t
 
 #[cfg(not(feature = "no-failure-logs"))]
 fn send_to_logger(logger:&Sender<task::LoggerMessage>, message: task::LoggerMessage){
-  match logger.send_opt(message.clone()) {
+  match logger.send_opt(message) {
     Err(_) => println!("Logger task is down, could not send message."),
     _ => {}
   }

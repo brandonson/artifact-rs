@@ -37,7 +37,8 @@ use std::cell::RefCell;
 pub enum LoggerMessage{
   PoisonPill,
   LogMessage(String, LogLevel, String),
-  NewLogger(String, LogLevel, LoggerType)
+  NewLogger(String, LogLevel, LoggerType),
+  RegisterLevelString(LogLevel, String)
 }
 
 enum LoggerInstance{
@@ -47,7 +48,8 @@ enum LoggerInstance{
 }
 
 struct LoggerTaskInfo{
-  loggers: HashMap<String, (LogLevel, LoggerInstance)>
+  loggers: HashMap<String, (LogLevel, LoggerInstance)>,
+  level_strings: HashMap<LogLevel, String>
 }
 
 impl LoggerInstance{
@@ -85,11 +87,14 @@ impl LoggerTaskInfo{
                          level::WTF,
                          format!("Can't log to the {} logger, it doesn't exist.", logger))
     }
+    println!("Can't log to the {} logger, it doesn't exist.", logger);
   }
 
   fn level_string(&self, level: LogLevel) -> String {
-    //TODO allow registering level strings, instead of just printing the level number
-    format!("{}", level)
+    match self.level_strings.get(&level) {
+      Some(ref strval) => strval.to_string(),
+      None => level.to_string()
+    }
   }
 
   fn add_file_logger(&mut self, logger:String, level:LogLevel, path:Path) {
@@ -120,18 +125,26 @@ pub fn spawn_logger(rx: Receiver<LoggerMessage>){
 }
 
 fn logger_main(rx: Receiver<LoggerMessage>){
-  let mut task_info = LoggerTaskInfo{loggers: HashMap::new()};
+  let mut task_info = LoggerTaskInfo{loggers: HashMap::new(), level_strings: HashMap::new()};
   loop {
     match rx.recv_opt() {
-      Ok(LoggerMessage::LogMessage(logger, level, message)) =>
-        task_info.write_message(logger.as_slice(), level, message),
+      Ok(LoggerMessage::LogMessage(logger, level, message)) => {
+        task_info.write_message(logger.as_slice(), level, message);
+      }
 
       Ok(LoggerMessage::NewLogger(logger, level, LoggerType::FileLogger(path))) =>
         task_info.add_file_logger(logger, level, path),
 
-      Ok(LoggerMessage::NewLogger(logger, level, simple_logger_type)) =>
-        task_info.add_simple_logger(logger, level, simple_logger_type),
-      Ok(LoggerMessage::PoisonPill) => break,
+      Ok(LoggerMessage::NewLogger(logger, level, simple_logger_type)) =>{
+        task_info.add_simple_logger(logger, level, simple_logger_type);
+      }
+      Ok(LoggerMessage::PoisonPill) => {
+        break;
+      }
+
+      Ok(LoggerMessage::RegisterLevelString(level, string)) => {
+        task_info.level_strings.insert(level, string);
+      }
 
       Err(_) => break,
     }

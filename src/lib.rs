@@ -45,10 +45,7 @@ impl ArtifactGlobalLib{
     internal::comm::init_global_task();
     ArtifactGlobalLib{x : ()}
   }
-}
-
-impl Drop for ArtifactGlobalLib{
-  fn drop(&mut self){
+  pub fn stop(&self){
     internal::comm::stop_global_task();
   }
 }
