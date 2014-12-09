@@ -1,0 +1,13 @@
+[package]
+
+name = "artifact"
+version = "0.0.1"
+authors = ["Brandon Sanderson <singingboyo@gmail.com>"]
+
+[dependencies.lazy_static]
+
+git = "https://github.com/kimundi/lazy-static.rs.git"
+
+[features]
+
+no-failure-logs = []
