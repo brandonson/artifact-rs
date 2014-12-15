@@ -44,53 +44,60 @@ pub enum LoggerType{
 
 impl Logger{
 
-  pub fn new(name: String, ty: LoggerType) -> Logger{
-    send_logger_message(LoggerMessage::NewLogger(name.clone(),
-                                                 feature_based_log_level(),
-                                                 ty));
-    Logger{name:name}
+  #[inline(always)]
+  pub fn new(name: &str, ty: LoggerType) -> Logger{
+    Logger::new_with_level(name, ty, feature_based_log_level())
   }
 
-  pub fn new_with_level(name: String, ty: LoggerType, level:LogLevel) -> Logger {
-    send_logger_message(LoggerMessage::NewLogger(name.clone(),
+  #[inline(always)]
+  pub fn new_with_level(name: &str, ty: LoggerType, level:LogLevel) -> Logger {
+    send_logger_message(LoggerMessage::NewLogger(name.to_string(),
                                                  level,
                                                  ty));
-    Logger{name: name}
+    Logger{name: name.to_string()}
   }
 
-  pub fn log(&self, level: LogLevel, message:String){
+  #[inline(always)]
+  pub fn log(&self, level: LogLevel, message:&str){
     send_logger_message(
       LoggerMessage::LogMessage(
         self.name.clone(),
         level,
-        message));
+        message.to_string()));
   }
 
-  pub fn wtf(&self, message:String){
+  #[inline(always)]
+  pub fn wtf(&self, message:&str){
     self.log(level::WTF, message);
   }
 
-  pub fn critical(&self, message:String){
+  #[inline(always)]
+  pub fn critical(&self, message:&str){
     self.log(level::CRITICAL, message);
   }
 
-  pub fn severe(&self, message:String){
+  #[inline(always)]
+  pub fn severe(&self, message:&str){
     self.log(level::SEVERE, message);
   }
 
-  pub fn warning(&self, message:String){
+  #[inline(always)]
+  pub fn warning(&self, message:&str){
     self.log(level::WARNING, message)
   }
 
-  pub fn debug(&self, message:String){
+  #[inline(always)]
+  pub fn debug(&self, message:&str){
     self.log(level::DEBUG, message);
   }
 
-  pub fn info(&self, message:String){
+  #[inline(always)]
+  pub fn info(&self, message:&str){
     self.log(level::INFO, message);
   }
 
-  pub fn verbose(&self, message:String){
+  #[inline(always)]
+  pub fn verbose(&self, message:&str){
     self.log(level::VERBOSE, message);
   }
 }

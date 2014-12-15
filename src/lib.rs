@@ -36,15 +36,16 @@ pub mod logger;
 mod internal;
 
 pub struct ArtifactGlobalLib {
-  #[allow(dead_code)]
-  x: ()
+  y: std::kinds::marker::NoCopy
 }
 
 impl ArtifactGlobalLib{
+  #[inline(always)]
   pub fn init() -> ArtifactGlobalLib {
     internal::comm::init_global_task();
-    ArtifactGlobalLib{x : ()}
+    ArtifactGlobalLib{y : std::kinds::marker::NoCopy}
   }
+  #[inline(always)]
   pub fn stop(&self){
     internal::comm::stop_global_task();
   }
