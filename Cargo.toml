@@ -2,7 +2,7 @@
 
 name = "artifact"
 description = "A logging library which allows settings to be specified through cargo features."
-version = "0.0.4"
+version = "0.0.5"
 authors = ["Brandon Sanderson <singingboyo@gmail.com>"]
 repository = "https://github.com/brandonson/artifact-rs"
 keywords = ["log", "logging"]

@@ -30,28 +30,38 @@ fn feature_based_log_level() -> LogLevel{
   level::WARNING
 }
 
+/// A logger within the Artifact logging library.
+/// The struct itself only stores the name of the
+/// logger, however, the initialization functions tell
+/// the backend what kind of logger it is, what level it logs
+/// at, and other interesting information.
 #[deriving(Show, Clone, Eq, PartialEq)]
 pub struct Logger{
-  pub name:String
+  name:String
 }
 
+/// Indicates what kind of output stream the logger will use.
 #[deriving(Clone, PartialEq, Eq)]
-pub enum LoggerType{
-  FileLogger(Path),
-  StdoutLogger,
-  StderrLogger
+pub enum LoggerOutput{
+  FileLog(Path),
+  StdoutLog,
+  StderrLog
 }
 
 impl Logger{
 
+  /// Creates a logger which will log to the given output.
+  /// This tells the backend logger task to initialize the logger.
   #[inline(always)]
-  pub fn new(name: &str, ty: LoggerType) -> Logger{
+  pub fn new(name: &str, ty: LoggerOutput) -> Logger{
     Logger::new_with_level(name, ty, feature_based_log_level())
   }
 
+  /// Creates a logger for the given output which logs messages at or above the given level.
+  /// This also initializes the logger by telling the backend task.
   #[inline(always)]
   #[cfg(not(feature = "disable"))]
-  pub fn new_with_level(name: &str, ty: LoggerType, level:LogLevel) -> Logger {
+  pub fn new_with_level(name: &str, ty: LoggerOutput, level:LogLevel) -> Logger {
     send_logger_message(LoggerMessage::NewLogger(name.to_string(),
                                                  level,
                                                  ty));
@@ -64,6 +74,8 @@ impl Logger{
     Logger{name : name.to_string() }
   }
 
+  /// Creates a new log message.  This just sends a message across
+  /// the backend channel to the actual logger task.
   #[inline(always)]
   #[cfg(not(feature = "disable"))]
   pub fn log(&self, level: LogLevel, message:&str){

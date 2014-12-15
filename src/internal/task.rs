@@ -27,7 +27,7 @@ use std::task::spawn;
 use std::io::fs::File;
 use std::collections::hash_map::HashMap;
 
-use logger::LoggerType;
+use logger::LoggerOutput;
 use level;
 use level::LogLevel;
 
@@ -37,7 +37,7 @@ use std::cell::RefCell;
 pub enum LoggerMessage{
   PoisonPill,
   LogMessage(String, LogLevel, String),
-  NewLogger(String, LogLevel, LoggerType),
+  NewLogger(String, LogLevel, LoggerOutput),
   RegisterLevelString(LogLevel, String)
 }
 
@@ -107,10 +107,10 @@ impl LoggerTaskInfo{
                         (level, LoggerInstance::FileLoggerInst(RefCell::new(file))));
   }
 
-  fn add_simple_logger(&mut self, logger:String, level: LogLevel, log_ty: LoggerType){
+  fn add_simple_logger(&mut self, logger:String, level: LogLevel, log_ty: LoggerOutput){
     let simple_inst = match log_ty {
-      LoggerType::StdoutLogger => LoggerInstance::StdoutLoggerInst,
-      LoggerType::StderrLogger => LoggerInstance::StderrLoggerInst,
+      LoggerOutput::StdoutLog => LoggerInstance::StdoutLoggerInst,
+      LoggerOutput::StderrLog => LoggerInstance::StderrLoggerInst,
       _ => panic!("Unsupported logger type for add_simple_logger.")
     };
     
@@ -132,7 +132,7 @@ fn logger_main(rx: Receiver<LoggerMessage>){
         task_info.write_message(logger.as_slice(), level, message);
       }
 
-      Ok(LoggerMessage::NewLogger(logger, level, LoggerType::FileLogger(path))) =>
+      Ok(LoggerMessage::NewLogger(logger, level, LoggerOutput::FileLog(path))) =>
         task_info.add_file_logger(logger, level, path),
 
       Ok(LoggerMessage::NewLogger(logger, level, simple_logger_type)) =>{

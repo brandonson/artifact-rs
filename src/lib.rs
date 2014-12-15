@@ -29,12 +29,13 @@ extern crate lazy_static;
 
 pub use level::LogLevel;
 pub use level::{WTF, CRITICAL, SEVERE, WARNING, DEBUG, INFO, VERBOSE};
-pub use logger::{Logger, LoggerType};
+pub use logger::{Logger, LoggerOutput};
 
 pub mod level;
 pub mod logger;
 mod internal;
 
+/// Used to initialize and clean up the logger library
 pub struct ArtifactGlobalLib {
   y: std::kinds::marker::NoCopy
 }
