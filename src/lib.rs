@@ -41,12 +41,27 @@ pub struct ArtifactGlobalLib {
 
 impl ArtifactGlobalLib{
   #[inline(always)]
+  #[cfg(not(feature = "disable"))]
   pub fn init() -> ArtifactGlobalLib {
     internal::comm::init_global_task();
     ArtifactGlobalLib{y : std::kinds::marker::NoCopy}
   }
+
   #[inline(always)]
+  #[cfg(feature = "disable")]
+  pub fn init() -> ArtifactGlobalLib {
+    ArtifactGlobalLib{ y : std::kinds::marker::NoCopy }
+  }
+
+  #[inline(always)]
+  #[cfg(not(feature = "disable"))]
   pub fn stop(&self){
     internal::comm::stop_global_task();
+  }
+
+  #[inline(always)]
+  #[cfg(feature = "disable")]
+  pub fn stop(&self){
+
   }
 }

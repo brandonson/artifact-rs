@@ -50,6 +50,7 @@ impl Logger{
   }
 
   #[inline(always)]
+  #[cfg(not(feature = "disable"))]
   pub fn new_with_level(name: &str, ty: LoggerType, level:LogLevel) -> Logger {
     send_logger_message(LoggerMessage::NewLogger(name.to_string(),
                                                  level,
@@ -58,12 +59,25 @@ impl Logger{
   }
 
   #[inline(always)]
+  #[cfg(feature = "disable")]
+  pub fn new_with_level(name: &str, ty: LoggerType, level: LogLevel) -> Logger {
+    Logger{name : name.to_string() }
+  }
+
+  #[inline(always)]
+  #[cfg(not(feature = "disable"))]
   pub fn log(&self, level: LogLevel, message:&str){
     send_logger_message(
       LoggerMessage::LogMessage(
         self.name.clone(),
         level,
         message.to_string()));
+  }
+
+  #[inline(always)]
+  #[cfg(feature = "disable")]
+  pub fn log(&self, level: LogLevel, message:&str){
+
   }
 
   #[inline(always)]
