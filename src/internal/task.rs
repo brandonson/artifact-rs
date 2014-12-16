@@ -121,7 +121,7 @@ impl LoggerTaskInfo{
 
 pub fn spawn_logger(rx: Receiver<LoggerMessage>){
   //! Spawns the main logger task
-  spawn(proc() logger_main(rx));
+  spawn(move | | logger_main(rx));
 }
 
 fn logger_main(rx: Receiver<LoggerMessage>){
