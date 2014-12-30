@@ -70,7 +70,7 @@ impl Logger{
 
   #[inline(always)]
   #[cfg(feature = "disable")]
-  pub fn new_with_level(name: &str, ty: LoggerType, level: LogLevel) -> Logger {
+  pub fn new_with_level(name: &str, ty: LoggerOutput, level: LogLevel) -> Logger {
     Logger{name : name.to_string() }
   }
 

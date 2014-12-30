@@ -27,6 +27,8 @@
 #[phase(plugin)]
 extern crate lazy_static;
 
+use std::thread::JoinGuard;
+
 pub use level::LogLevel;
 pub use level::{WTF, CRITICAL, SEVERE, WARNING, DEBUG, INFO, VERBOSE};
 pub use logger::{Logger, LoggerOutput};
@@ -37,21 +39,23 @@ mod internal;
 
 /// Used to initialize and clean up the logger library
 pub struct ArtifactGlobalLib {
-  y: std::kinds::marker::NoCopy
+  _marker: std::kinds::marker::NoCopy,
+  _guard: Option<JoinGuard<()>>
 }
 
 impl ArtifactGlobalLib{
   #[inline(always)]
   #[cfg(not(feature = "disable"))]
   pub fn init() -> ArtifactGlobalLib {
-    internal::comm::init_global_task();
-    ArtifactGlobalLib{y : std::kinds::marker::NoCopy}
+    let guard = internal::comm::init_global_task();
+    ArtifactGlobalLib{_marker : std::kinds::marker::NoCopy, _guard: guard}
   }
 
   #[inline(always)]
   #[cfg(feature = "disable")]
   pub fn init() -> ArtifactGlobalLib {
-    ArtifactGlobalLib{ y : std::kinds::marker::NoCopy }
+    ArtifactGlobalLib{ _marker : std::kinds::marker::NoCopy,
+                       _guard : None}
   }
 
   #[inline(always)]

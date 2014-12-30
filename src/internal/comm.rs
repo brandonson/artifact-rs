@@ -23,24 +23,27 @@
 
 use std::sync::Mutex;
 use std::cell::RefCell;
+
+use std::thread::JoinGuard;
+
 use internal::task;
 use level;
 
 lazy_static!(
   static ref GLOBAL_LOGGER_ACCESS: Mutex<Option<Artifact>> = Mutex::new(None);
-)
+);
 
-thread_local!(static LOCAL_LOGGER_CELL: RefCell<Option<Artifact>> = RefCell::new(None))
+thread_local!(static LOCAL_LOGGER_CELL: RefCell<Option<Artifact>> = RefCell::new(None));
 
 #[deriving(Clone)]
 pub struct Artifact{
   msg_tx: Sender<task::LoggerMessage>
 }
 
-pub fn init_global_task(){
+pub fn init_global_task() -> Option<JoinGuard<()>> {
   let mut g_logger = GLOBAL_LOGGER_ACCESS.lock();
   if g_logger.is_none() {
-    let logger_task_sender = spawn_logger_task();
+    let (logger_task_sender, guard) = spawn_logger_task();
     register_level(&logger_task_sender, "TERRIBLE FAILURE", level::WTF);
     register_level(&logger_task_sender, "CRITICAL", level::CRITICAL);
     register_level(&logger_task_sender, "SEVERE", level::SEVERE);
@@ -50,6 +53,9 @@ pub fn init_global_task(){
     register_level(&logger_task_sender, "VERBOSE", level::VERBOSE);
 
     *g_logger = Some(logger_task_sender);
+    Some(guard)
+  } else {
+    None
   }
 }
 
@@ -103,8 +109,8 @@ fn send_to_logger(logger:&Sender<task::LoggerMessage>, message: task::LoggerMess
   let _ = logger.send_opt(message);
 }
 
-fn spawn_logger_task() -> Artifact {
+fn spawn_logger_task() -> (Artifact, JoinGuard<()>) {
   let (tx, rx) = channel();
-  task::spawn_logger(rx);
-  Artifact{msg_tx: tx}
+  let thread_guard = task::spawn_logger(rx);
+  (Artifact{msg_tx: tx}, thread_guard)
 }

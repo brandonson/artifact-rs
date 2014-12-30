@@ -23,7 +23,7 @@
 
 use std::io::stderr;
 use std::comm::Receiver;
-use std::task::spawn;
+use std::thread::{Thread, JoinGuard};
 use std::io::fs::File;
 use std::collections::hash_map::HashMap;
 
@@ -119,9 +119,9 @@ impl LoggerTaskInfo{
   }
 }
 
-pub fn spawn_logger(rx: Receiver<LoggerMessage>){
+pub fn spawn_logger(rx: Receiver<LoggerMessage>) -> JoinGuard<()>{
   //! Spawns the main logger task
-  spawn(move | | logger_main(rx));
+  Thread::spawn(move | | logger_main(rx))
 }
 
 fn logger_main(rx: Receiver<LoggerMessage>){
