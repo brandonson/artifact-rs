@@ -22,6 +22,7 @@
  */
 
 use std::sync::Mutex;
+use std::sync::mpsc::{Sender, channel};
 use std::cell::RefCell;
 
 use std::thread::JoinGuard;
@@ -35,13 +36,21 @@ lazy_static!(
 
 thread_local!(static LOCAL_LOGGER_CELL: RefCell<Option<Artifact>> = RefCell::new(None));
 
-#[deriving(Clone)]
+#[derive(Clone)]
 pub struct Artifact{
   msg_tx: Sender<task::LoggerMessage>
 }
 
 pub fn init_global_task() -> Option<JoinGuard<()>> {
-  let mut g_logger = GLOBAL_LOGGER_ACCESS.lock();
+  let g_logger_res = GLOBAL_LOGGER_ACCESS.lock();
+  
+  if g_logger_res.is_err() {
+    println!("Global logging mutex is corrupted on global init.  This is NOT GOOD.");
+    return None;
+  }
+
+  let mut g_logger = g_logger_res.unwrap();
+
   if g_logger.is_none() {
     let (logger_task_sender, guard) = spawn_logger_task();
     register_level(&logger_task_sender, "TERRIBLE FAILURE", level::WTF);
@@ -62,12 +71,14 @@ pub fn init_global_task() -> Option<JoinGuard<()>> {
 fn register_level(artifact_state: &Artifact,
                   name: &str,
                   level: level::LogLevel) {
-  artifact_state.msg_tx.send(task::LoggerMessage::RegisterLevelString(level, name.to_string()))
+  //TODO proper error handling
+  let _ = artifact_state.msg_tx.send(task::LoggerMessage::RegisterLevelString(level, name.to_string()));
 }
 
 pub fn stop_global_task(){
-  match *GLOBAL_LOGGER_ACCESS.lock() {
-    Some(Artifact{ref msg_tx}) => msg_tx.send(task::LoggerMessage::PoisonPill),
+  //TODO proper error handling
+  match *GLOBAL_LOGGER_ACCESS.lock().unwrap() {
+    Some(Artifact{ref msg_tx}) => { let _ = msg_tx.send(task::LoggerMessage::PoisonPill); }
     None => {}
   }
 }
@@ -87,7 +98,15 @@ pub fn send_logger_message(message: task::LoggerMessage){
 
 fn send_logger_message_with_uninit_tls(tls_ref:&mut Option<Artifact>, message: task::LoggerMessage){
   let local_sender_opt = GLOBAL_LOGGER_ACCESS.lock();
-  match *local_sender_opt {
+  
+  if local_sender_opt.is_err() {
+    if !cfg!(feature = "no-failure-logs") {
+      println!("Global logger mutex is corrupted.  Cannot init task-local sender instance.");
+    }
+    return;
+  }
+
+  match *local_sender_opt.unwrap() {
     None => panic!("Global logger task info not initialized.  Try a GlobalArtifactLib instance?"),
     Some(ref local_sender) => {
       send_to_logger(&local_sender.msg_tx, message);
@@ -98,7 +117,7 @@ fn send_logger_message_with_uninit_tls(tls_ref:&mut Option<Artifact>, message: t
 
 #[cfg(not(feature = "no-failure-logs"))]
 fn send_to_logger(logger:&Sender<task::LoggerMessage>, message: task::LoggerMessage){
-  match logger.send_opt(message) {
+  match logger.send(message) {
     Err(_) => println!("Logger task is down, could not send message."),
     _ => {}
   }
@@ -106,7 +125,7 @@ fn send_to_logger(logger:&Sender<task::LoggerMessage>, message: task::LoggerMess
 
 #[cfg(feature = "no-failure-logs")]
 fn send_to_logger(logger:&Sender<task::LoggerMessage>, message: task::LoggerMessage){
-  let _ = logger.send_opt(message);
+  let _ = logger.send(message);
 }
 
 fn spawn_logger_task() -> (Artifact, JoinGuard<()>) {

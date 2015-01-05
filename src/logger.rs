@@ -35,13 +35,13 @@ fn feature_based_log_level() -> LogLevel{
 /// logger, however, the initialization functions tell
 /// the backend what kind of logger it is, what level it logs
 /// at, and other interesting information.
-#[deriving(Show, Clone, Eq, PartialEq)]
+#[derive(Show, Clone, Eq, PartialEq)]
 pub struct Logger{
   name:String
 }
 
 /// Indicates what kind of output stream the logger will use.
-#[deriving(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum LoggerOutput{
   FileLog(Path),
   StdoutLog,

@@ -22,7 +22,7 @@
  */
 
 use std::io::stderr;
-use std::comm::Receiver;
+use std::sync::mpsc::Receiver;
 use std::thread::{Thread, JoinGuard};
 use std::io::fs::File;
 use std::collections::hash_map::HashMap;
@@ -33,7 +33,7 @@ use level::LogLevel;
 
 use std::cell::RefCell;
 
-#[deriving(Clone)]
+#[derive(Clone)]
 pub enum LoggerMessage{
   PoisonPill,
   LogMessage(String, LogLevel, String),
@@ -127,7 +127,7 @@ pub fn spawn_logger(rx: Receiver<LoggerMessage>) -> JoinGuard<()>{
 fn logger_main(rx: Receiver<LoggerMessage>){
   let mut task_info = LoggerTaskInfo{loggers: HashMap::new(), level_strings: HashMap::new()};
   loop {
-    match rx.recv_opt() {
+    match rx.recv() {
       Ok(LoggerMessage::LogMessage(logger, level, message)) => {
         task_info.write_message(logger.as_slice(), level, message);
       }
