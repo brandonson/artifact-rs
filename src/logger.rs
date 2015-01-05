@@ -50,6 +50,12 @@ pub enum LoggerOutput{
 
 impl Logger{
 
+  /// Creates a Logger instance, but does not tell the
+  /// backend to initialize the logger.
+  pub fn access(name: &str) -> Logger {
+    Logger{name: name.to_string()}
+  }
+
   /// Creates a logger which will log to the given output.
   /// This tells the backend logger task to initialize the logger.
   #[inline(always)]

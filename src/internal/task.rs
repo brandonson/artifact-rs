@@ -98,6 +98,11 @@ impl LoggerTaskInfo{
   }
 
   fn add_file_logger(&mut self, logger:String, level:LogLevel, path:Path) {
+    if !self.loggers.get(logger.as_slice()).is_none() {
+      //TODO add an internal event logger so we can log things like this
+      return;
+    }
+
     let file = match File::create(&path) {
       Ok(x) => x,
       Err(_) => panic!("Could not create log file {}", path.as_str())
