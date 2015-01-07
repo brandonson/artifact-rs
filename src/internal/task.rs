@@ -60,10 +60,10 @@ impl LoggerInstance{
       }
       &LoggerInstance::StderrLoggerInst => {
         // discard failures.  What are we going to do, log it?
-        let _ = stderr().write_str(message.as_slice());
+        let _ = stderr().write_line(message.as_slice());
       }
       &LoggerInstance::FileLoggerInst(ref file_writer) => {
-        let _ = file_writer.borrow_mut().write_str(message.as_slice());
+        let _ = file_writer.borrow_mut().write_line(message.as_slice());
       }
     }
   }

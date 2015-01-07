@@ -21,6 +21,10 @@ The documentation is somewhat limited, but rustdocs are uploaded on every Travis
 
 The bin directory has a few examples.
 
+##Testing
+
+This library desperately needs some unit tests, as there are none at the moment.
+
 ##License
 
 Artifact (which is composed of all code within this, the artifact-rs github repository) is released under
