@@ -105,7 +105,13 @@ impl LoggerTaskInfo{
 
     let file = match File::create(&path) {
       Ok(x) => x,
-      Err(_) => panic!("Could not create log file {}", path.as_str())
+      Err(_) => {
+        if let Some(path_str) = path.as_str() {
+          panic!("Could not create log file {}", path_str);
+        } else {
+          panic!("Could not create a log file (name is not printable)");
+        }
+      }
     };
 
     self.loggers.insert(logger,
@@ -124,9 +130,9 @@ impl LoggerTaskInfo{
   }
 }
 
-pub fn spawn_logger(rx: Receiver<LoggerMessage>) -> JoinGuard<()>{
+pub fn spawn_logger(rx: Receiver<LoggerMessage>) -> JoinGuard<'static, ()>{
   //! Spawns the main logger task
-  Thread::spawn(move | | logger_main(rx))
+  Thread::scoped(move | | logger_main(rx))
 }
 
 fn logger_main(rx: Receiver<LoggerMessage>){

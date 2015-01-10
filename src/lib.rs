@@ -21,10 +21,10 @@
  *
  */
 
-#![feature(phase)]
 #![feature(unboxed_closures)]
+#![allow(unstable)]
 
-#[phase(plugin)]
+#[macro_use]
 extern crate lazy_static;
 
 use std::thread::JoinGuard;
@@ -39,8 +39,7 @@ mod internal;
 
 /// Used to initialize and clean up the logger library
 pub struct ArtifactGlobalLib {
-  _marker: std::kinds::marker::NoCopy,
-  _guard: Option<JoinGuard<()>>
+  _guard: Option<JoinGuard<'static, ()>>
 }
 
 impl ArtifactGlobalLib{
@@ -48,14 +47,13 @@ impl ArtifactGlobalLib{
   #[cfg(not(feature = "disable"))]
   pub fn init() -> ArtifactGlobalLib {
     let guard = internal::comm::init_global_task();
-    ArtifactGlobalLib{_marker : std::kinds::marker::NoCopy, _guard: guard}
+    ArtifactGlobalLib{_guard: guard}
   }
 
   #[inline(always)]
   #[cfg(feature = "disable")]
   pub fn init() -> ArtifactGlobalLib {
-    ArtifactGlobalLib{ _marker : std::kinds::marker::NoCopy,
-                       _guard : None}
+    ArtifactGlobalLib{_guard : None}
   }
 
   #[inline(always)]

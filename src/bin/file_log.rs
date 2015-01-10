@@ -1,3 +1,4 @@
+#![allow(unstable)]
 extern crate artifact;
 
 use artifact::{Logger, LoggerOutput, ArtifactGlobalLib};

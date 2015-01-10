@@ -41,7 +41,7 @@ pub struct Artifact{
   msg_tx: Sender<task::LoggerMessage>
 }
 
-pub fn init_global_task() -> Option<JoinGuard<()>> {
+pub fn init_global_task() -> Option<JoinGuard<'static, ()>> {
   let g_logger_res = GLOBAL_LOGGER_ACCESS.lock();
   
   if g_logger_res.is_err() {
@@ -128,7 +128,7 @@ fn send_to_logger(logger:&Sender<task::LoggerMessage>, message: task::LoggerMess
   let _ = logger.send(message);
 }
 
-fn spawn_logger_task() -> (Artifact, JoinGuard<()>) {
+fn spawn_logger_task() -> (Artifact, JoinGuard<'static, ()>) {
   let (tx, rx) = channel();
   let thread_guard = task::spawn_logger(rx);
   (Artifact{msg_tx: tx}, thread_guard)
