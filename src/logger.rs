@@ -35,7 +35,7 @@ fn feature_based_log_level() -> LogLevel{
 /// logger, however, the initialization functions tell
 /// the backend what kind of logger it is, what level it logs
 /// at, and other interesting information.
-#[derive(Show, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Logger{
   name:String
 }

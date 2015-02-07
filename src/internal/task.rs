@@ -21,10 +21,10 @@
  *
  */
 
-use std::io::stderr;
+use std::old_io::stderr;
 use std::sync::mpsc::Receiver;
 use std::thread::{Thread, JoinGuard};
-use std::io::fs::File;
+use std::old_io::fs::File;
 use std::collections::hash_map::HashMap;
 
 use logger::LoggerOutput;

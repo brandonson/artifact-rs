@@ -22,7 +22,10 @@
  */
 
 #![feature(unboxed_closures)]
-#![allow(unstable)]
+#![feature(core)]
+#![feature(io)]
+#![feature(path)]
+#![feature(std_misc)]
 
 #[macro_use]
 extern crate lazy_static;
