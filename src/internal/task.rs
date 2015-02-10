@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) 2014 Brandon Sanderson
+ * Copyright (c) 2014-2015 Brandon Sanderson
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -44,7 +44,8 @@ pub enum LoggerMessage{
 enum LoggerInstance{
   FileLoggerInst(RefCell<File>),
   StdoutLoggerInst,
-  StderrLoggerInst
+  StderrLoggerInst,
+  MultiLoggerInst(Vec<String>),
 }
 
 struct LoggerTaskInfo{
@@ -53,7 +54,7 @@ struct LoggerTaskInfo{
 }
 
 impl LoggerInstance{
-  fn write(&self, message:String) {
+  fn write(&self, message:String, level:LogLevel, task_info:&LoggerTaskInfo) {
     match self {
       &LoggerInstance::StdoutLoggerInst => {
         println!("{}", message);
@@ -65,16 +66,29 @@ impl LoggerInstance{
       &LoggerInstance::FileLoggerInst(ref file_writer) => {
         let _ = file_writer.borrow_mut().write_line(message.as_slice());
       }
+      &LoggerInstance::MultiLoggerInst(ref other_loggers) => {
+        for logger in other_loggers.iter() {
+          let formatted_msg = format!("[{}] -- {}", logger, message);
+          task_info.write_formatted_message(logger, level, formatted_msg);
+        }
+      }
     }
   }
 }
 
 impl LoggerTaskInfo{
   fn write_message(&self, logger_name: &str, msg_level: LogLevel, msg: String) {
+    self.write_formatted_message(
+      logger_name,
+      msg_level,
+      format!("[{}] {}: {}", logger_name, self.level_string(msg_level), msg));
+  }
+
+  fn write_formatted_message(&self, logger_name: &str, msg_level: LogLevel, msg: String) {
     match self.loggers.get(logger_name) {
       Some(&(logger_level, ref logger)) => {
         if msg_level <= logger_level {
-          logger.write(format!("[{}] {}: {}", logger_name, self.level_string(msg_level), msg));
+          logger.write(msg, msg_level, &self);
         }
       }
       None => self.handle_nonexistant_logger(logger_name)
@@ -118,6 +132,12 @@ impl LoggerTaskInfo{
                         (level, LoggerInstance::FileLoggerInst(RefCell::new(file))));
   }
 
+  fn add_multi_logger(&mut self, logger:String, level:LogLevel, direct_to:Vec<String>){
+    let instance = LoggerInstance::MultiLoggerInst(direct_to);
+    self.loggers.insert(logger,
+                        (level, instance));
+  }
+
   fn add_simple_logger(&mut self, logger:String, level: LogLevel, log_ty: LoggerOutput){
     let simple_inst = match log_ty {
       LoggerOutput::StdoutLog => LoggerInstance::StdoutLoggerInst,
@@ -146,9 +166,12 @@ fn logger_main(rx: Receiver<LoggerMessage>){
       Ok(LoggerMessage::NewLogger(logger, level, LoggerOutput::FileLog(path))) =>
         task_info.add_file_logger(logger, level, path),
 
-      Ok(LoggerMessage::NewLogger(logger, level, simple_logger_type)) =>{
-        task_info.add_simple_logger(logger, level, simple_logger_type);
-      }
+      Ok(LoggerMessage::NewLogger(logger, level, LoggerOutput::MultiLog(others))) =>
+        task_info.add_multi_logger(logger, level, others),
+
+      Ok(LoggerMessage::NewLogger(logger, level, simple_logger_type)) =>
+        task_info.add_simple_logger(logger, level, simple_logger_type),
+
       Ok(LoggerMessage::PoisonPill) => {
         break;
       }

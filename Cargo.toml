@@ -2,7 +2,7 @@
 
 name = "artifact"
 description = "A logging library which allows settings to be specified through cargo features."
-version = "0.0.12"
+version = "0.0.13"
 authors = ["Brandon Sanderson <singingboyo@gmail.com>"]
 repository = "https://github.com/brandonson/artifact-rs"
 keywords = ["log", "logging"]
@@ -35,5 +35,10 @@ test = false
 
 [[bin]]
 name = "level_loggers"
+doc = false
+test = false
+
+[[bin]]
+name = "multi_logger"
 doc = false
 test = false

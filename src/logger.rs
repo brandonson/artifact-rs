@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Brandon Sanderson
+ * Copyright (c) 2014-2015 Brandon Sanderson
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -45,7 +45,14 @@ pub struct Logger{
 pub enum LoggerOutput{
   FileLog(Path),
   StdoutLog,
-  StderrLog
+  StderrLog,
+  /// Log to various other loggers.
+  /// Any messages sent to this logger will be forwarded
+  /// on to the loggers with the names given.
+  /// Note that messages are filtered both by the level
+  /// of this logger and the level of the sub loggers
+  /// assigned to it.
+  MultiLog(Vec<String>),
 }
 
 impl Logger{
