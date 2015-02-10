@@ -21,11 +21,11 @@
  *
  */
 
-use std::old_io::stderr;
+use std::old_io::{stderr, File};
 use std::sync::mpsc::Receiver;
 use std::thread::{Thread, JoinGuard};
-use std::old_io::fs::File;
 use std::collections::hash_map::HashMap;
+use std::rc::Rc;
 
 use logger::LoggerOutput;
 use level;
@@ -42,7 +42,7 @@ pub enum LoggerMessage{
 }
 
 enum LoggerInstance{
-  FileLoggerInst(RefCell<File>),
+  FileLoggerInst(Rc<RefCell<File>>, Path),
   StdoutLoggerInst,
   StderrLoggerInst,
   MultiLoggerInst(Vec<String>),
@@ -63,7 +63,7 @@ impl LoggerInstance{
         // discard failures.  What are we going to do, log it?
         let _ = stderr().write_line(message.as_slice());
       }
-      &LoggerInstance::FileLoggerInst(ref file_writer) => {
+      &LoggerInstance::FileLoggerInst(ref file_writer, _) => {
         let _ = file_writer.borrow_mut().write_line(message.as_slice());
       }
       &LoggerInstance::MultiLoggerInst(ref other_loggers) => {
@@ -117,6 +117,26 @@ impl LoggerTaskInfo{
       return;
     }
 
+    let mut previous_file_logger:Option<LoggerInstance> = None;
+
+    for &(_, ref known_logger) in self.loggers.values() {
+      match known_logger {
+        &LoggerInstance::FileLoggerInst(ref cell, ref prev_path) => {
+          if *prev_path == path {
+            previous_file_logger = Some(LoggerInstance::FileLoggerInst(cell.clone(), prev_path.clone()));
+            break;
+          }
+        }
+        _ => {}
+      }
+    }
+
+    if let Some(prev_logger) = previous_file_logger {
+      self.loggers.insert(logger,
+                          (level, prev_logger));
+      return;
+    }
+
     let file = match File::create(&path) {
       Ok(x) => x,
       Err(_) => {
@@ -129,16 +149,26 @@ impl LoggerTaskInfo{
     };
 
     self.loggers.insert(logger,
-                        (level, LoggerInstance::FileLoggerInst(RefCell::new(file))));
+                        (level, LoggerInstance::FileLoggerInst(Rc::new(RefCell::new(file)), path)));
   }
 
   fn add_multi_logger(&mut self, logger:String, level:LogLevel, direct_to:Vec<String>){
+    if !self.loggers.get(logger.as_slice()).is_none() {
+      //TODO add an internal event logger so we can log things like this
+      return;
+    }
+
     let instance = LoggerInstance::MultiLoggerInst(direct_to);
     self.loggers.insert(logger,
                         (level, instance));
   }
 
   fn add_simple_logger(&mut self, logger:String, level: LogLevel, log_ty: LoggerOutput){
+    if !self.loggers.get(logger.as_slice()).is_none() {
+      //TODO add an internal event logger so we can log things like this
+      return;
+    }
+
     let simple_inst = match log_ty {
       LoggerOutput::StdoutLog => LoggerInstance::StdoutLoggerInst,
       LoggerOutput::StderrLog => LoggerInstance::StderrLoggerInst,
