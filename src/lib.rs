@@ -23,8 +23,8 @@
 
 #![feature(unboxed_closures)]
 #![feature(core)]
-#![feature(io)]
-#![feature(path)]
+#![feature(old_io)]
+#![feature(old_path)]
 #![feature(std_misc)]
 
 #[macro_use]

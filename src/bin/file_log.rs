@@ -1,4 +1,4 @@
-#![feature(path)]
+#![feature(old_path)]
 extern crate artifact;
 
 use artifact::{Logger, LoggerOutput, ArtifactGlobalLib, DEBUG};
