@@ -1,6 +1,6 @@
 #Artifact Logging Library
 
-[![Build Status](https://travis-ci.org/brandonson/artifact-rs.png?branch=master)](https://travis-ci.org/brandonson/evict)
+[![Build Status](https://travis-ci.org/brandonson/artifact-rs.png?branch=master)](https://travis-ci.org/brandonson/artifact-rs)
 
 Artifact (or artifact-rs) is a logging library for the [rust language](https://github.com/rust-lang/rust).
 It aims to provide effective logging in debug builds, while allowing release builds to limit or disable

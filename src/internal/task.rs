@@ -21,11 +21,13 @@
  *
  */
 
-use std::old_io::{stderr, File};
+use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 use std::thread::{Thread, JoinGuard};
 use std::collections::hash_map::HashMap;
 use std::rc::Rc;
+use std::fs::File;
+use std::io::{Write, stderr};
 
 use logger::LoggerOutput;
 use level;
@@ -42,7 +44,7 @@ pub enum LoggerMessage{
 }
 
 enum LoggerInstance{
-  FileLoggerInst(Rc<RefCell<File>>, Path),
+  FileLoggerInst(Rc<RefCell<File>>, PathBuf),
   StdoutLoggerInst,
   StderrLoggerInst,
   MultiLoggerInst(Vec<String>),
@@ -61,10 +63,10 @@ impl LoggerInstance{
       }
       &LoggerInstance::StderrLoggerInst => {
         // discard failures.  What are we going to do, log it?
-        let _ = stderr().write_line(message.as_slice());
+        let _ = writeln!(&mut stderr(), "{}", message.as_slice());
       }
       &LoggerInstance::FileLoggerInst(ref file_writer, _) => {
-        let _ = file_writer.borrow_mut().write_line(message.as_slice());
+        let _ = writeln!(file_writer.borrow_mut(), "{}", message.as_slice());
       }
       &LoggerInstance::MultiLoggerInst(ref other_loggers) => {
         for logger in other_loggers.iter() {
@@ -111,7 +113,7 @@ impl LoggerTaskInfo{
     }
   }
 
-  fn add_file_logger(&mut self, logger:String, level:LogLevel, path:Path) {
+  fn add_file_logger(&mut self, logger:String, level:LogLevel, path:PathBuf) {
     if !self.loggers.get(logger.as_slice()).is_none() {
       //TODO add an internal event logger so we can log things like this
       return;
@@ -140,7 +142,7 @@ impl LoggerTaskInfo{
     let file = match File::create(&path) {
       Ok(x) => x,
       Err(_) => {
-        if let Some(path_str) = path.as_str() {
+        if let Some(path_str) = path.as_os_str().to_str() {
           panic!("Could not create log file {}", path_str);
         } else {
           panic!("Could not create a log file (name is not printable)");

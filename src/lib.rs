@@ -23,8 +23,7 @@
 
 #![feature(unboxed_closures)]
 #![feature(core)]
-#![feature(old_io)]
-#![feature(old_path)]
+#![feature(box_syntax)]
 #![feature(std_misc)]
 
 #[macro_use]
@@ -60,14 +59,10 @@ impl ArtifactGlobalLib{
   }
 
   #[inline(always)]
-  #[cfg(not(feature = "disable"))]
   pub fn stop(&self){
-    internal::comm::stop_global_task();
+    if self._guard.is_some() {
+      internal::comm::stop_global_task();
+    }
   }
 
-  #[inline(always)]
-  #[cfg(feature = "disable")]
-  pub fn stop(&self){
-
-  }
 }

@@ -25,6 +25,7 @@ use level;
 use level::LogLevel;
 use internal::comm::send_logger_message;
 use internal::task::LoggerMessage;
+use std::path::PathBuf;
 
 fn feature_based_log_level() -> LogLevel{
   level::WARNING
@@ -43,7 +44,7 @@ pub struct Logger{
 /// Indicates what kind of output stream the logger will use.
 #[derive(Clone, PartialEq, Eq)]
 pub enum LoggerOutput{
-  FileLog(Path),
+  FileLog(PathBuf),
   StdoutLog,
   StderrLog,
   /// Log to various other loggers.

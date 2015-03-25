@@ -45,7 +45,7 @@ pub fn init_global_task() -> Option<JoinGuard<'static, ()>> {
   let g_logger_res = GLOBAL_LOGGER_ACCESS.lock();
   
   if g_logger_res.is_err() {
-    println!("Global logging mutex is corrupted on global init.  This is NOT GOOD.");
+    println!("Global artifact-rs logging mutex is corrupted on global init.  This is NOT GOOD.");
     return None;
   }
 
