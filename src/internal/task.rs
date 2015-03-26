@@ -23,7 +23,8 @@
 
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
-use std::thread::{Thread, JoinGuard};
+use std::thread::{JoinGuard};
+use std::thread;
 use std::collections::hash_map::HashMap;
 use std::rc::Rc;
 use std::fs::File;
@@ -63,10 +64,10 @@ impl LoggerInstance{
       }
       &LoggerInstance::StderrLoggerInst => {
         // discard failures.  What are we going to do, log it?
-        let _ = writeln!(&mut stderr(), "{}", message.as_slice());
+        let _ = writeln!(&mut stderr(), "{}", message);
       }
       &LoggerInstance::FileLoggerInst(ref file_writer, _) => {
-        let _ = writeln!(file_writer.borrow_mut(), "{}", message.as_slice());
+        let _ = writeln!(file_writer.borrow_mut(), "{}", message);
       }
       &LoggerInstance::MultiLoggerInst(ref other_loggers) => {
         for logger in other_loggers.iter() {
@@ -99,7 +100,7 @@ impl LoggerTaskInfo{
 
   fn handle_nonexistant_logger(&self, logger: &str){
     for existing_logger in self.loggers.keys() {
-      self.write_message(existing_logger.as_slice(),
+      self.write_message(existing_logger.as_ref(),
                          level::WTF,
                          format!("Can't log to the {} logger, it doesn't exist.", logger))
     }
@@ -114,7 +115,7 @@ impl LoggerTaskInfo{
   }
 
   fn add_file_logger(&mut self, logger:String, level:LogLevel, path:PathBuf) {
-    if !self.loggers.get(logger.as_slice()).is_none() {
+    if !self.loggers.get(&logger).is_none() {
       //TODO add an internal event logger so we can log things like this
       return;
     }
@@ -155,7 +156,7 @@ impl LoggerTaskInfo{
   }
 
   fn add_multi_logger(&mut self, logger:String, level:LogLevel, direct_to:Vec<String>){
-    if !self.loggers.get(logger.as_slice()).is_none() {
+    if !self.loggers.get(&logger).is_none() {
       //TODO add an internal event logger so we can log things like this
       return;
     }
@@ -166,7 +167,7 @@ impl LoggerTaskInfo{
   }
 
   fn add_simple_logger(&mut self, logger:String, level: LogLevel, log_ty: LoggerOutput){
-    if !self.loggers.get(logger.as_slice()).is_none() {
+    if !self.loggers.get(&logger).is_none() {
       //TODO add an internal event logger so we can log things like this
       return;
     }
@@ -184,7 +185,7 @@ impl LoggerTaskInfo{
 
 pub fn spawn_logger(rx: Receiver<LoggerMessage>) -> JoinGuard<'static, ()>{
   //! Spawns the main logger task
-  Thread::scoped(move | | logger_main(rx))
+  thread::scoped(move | | logger_main(rx))
 }
 
 fn logger_main(rx: Receiver<LoggerMessage>){
@@ -192,7 +193,7 @@ fn logger_main(rx: Receiver<LoggerMessage>){
   loop {
     match rx.recv() {
       Ok(LoggerMessage::LogMessage(logger, level, message)) => {
-        task_info.write_message(logger.as_slice(), level, message);
+        task_info.write_message(logger.as_ref(), level, message);
       }
 
       Ok(LoggerMessage::NewLogger(logger, level, LoggerOutput::FileLog(path))) =>
