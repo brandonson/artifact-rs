@@ -1,16 +1,16 @@
-/* 
+/*
  * Copyright (c) 2014 Brandon Sanderson
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -43,7 +43,7 @@ pub struct Artifact{
 
 pub fn init_global_task() -> Option<JoinGuard<'static, ()>> {
   let g_logger_res = GLOBAL_LOGGER_ACCESS.lock();
-  
+
   if g_logger_res.is_err() {
     println!("Global artifact-rs logging mutex is corrupted on global init.  This is NOT GOOD.");
     return None;
@@ -98,7 +98,7 @@ pub fn send_logger_message(message: task::LoggerMessage){
 
 fn send_logger_message_with_uninit_tls(tls_ref:&mut Option<Artifact>, message: task::LoggerMessage){
   let local_sender_opt = GLOBAL_LOGGER_ACCESS.lock();
-  
+
   if local_sender_opt.is_err() {
     if !cfg!(feature = "no-failure-logs") {
       println!("Global logger mutex is corrupted.  Cannot init task-local sender instance.");
