@@ -1,4 +1,3 @@
-#![feature(convert)]
 extern crate artifact;
 
 use std::path::PathBuf;

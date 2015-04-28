@@ -23,7 +23,7 @@
 
 #![feature(unboxed_closures)]
 #![feature(box_syntax)]
-#![feature(convert)]
+#![feature(scoped)]
 
 #[macro_use]
 extern crate lazy_static;
