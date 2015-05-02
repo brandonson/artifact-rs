@@ -29,6 +29,7 @@ use std::collections::hash_map::HashMap;
 use std::rc::Rc;
 use std::fs::File;
 use std::io::{Write, stderr};
+use std::borrow::Borrow;
 
 use logger::LoggerOutput;
 use level;
@@ -36,12 +37,16 @@ use level::LogLevel;
 
 use std::cell::RefCell;
 
+const INTERNAL_LOGGER_NAME:&'static str = "Artifact Internal";
+
 #[derive(Clone)]
 pub enum LoggerMessage{
   PoisonPill,
   LogMessage(String, LogLevel, String),
   NewLogger(String, LogLevel, LoggerOutput),
-  RegisterLevelString(LogLevel, String)
+  RedirectLogger(String, Option<LogLevel>, LoggerOutput),
+  RegisterLevelString(LogLevel, String),
+  Disable(String, bool)
 }
 
 enum LoggerInstance{
@@ -53,41 +58,66 @@ enum LoggerInstance{
 
 struct LoggerTaskInfo{
   loggers: HashMap<String, (LogLevel, LoggerInstance)>,
-  level_strings: HashMap<LogLevel, String>
+  level_strings: HashMap<LogLevel, String>,
+  disabled: HashMap<String, bool>,
 }
 
 impl LoggerInstance{
-  fn write(&self, message:String, level:LogLevel, task_info:&LoggerTaskInfo) {
-    match self {
-      &LoggerInstance::StdoutLoggerInst => {
+  fn write(&self, message:&str, level:LogLevel, task_info:&LoggerTaskInfo) {
+    match *self {
+      LoggerInstance::StdoutLoggerInst => {
         println!("{}", message);
       }
-      &LoggerInstance::StderrLoggerInst => {
+      LoggerInstance::StderrLoggerInst => {
         // discard failures.  What are we going to do, log it?
         let _ = writeln!(&mut stderr(), "{}", message);
       }
-      &LoggerInstance::FileLoggerInst(ref file_writer, _) => {
+      LoggerInstance::FileLoggerInst(ref file_writer, _) => {
         let _ = writeln!(file_writer.borrow_mut(), "{}", message);
       }
-      &LoggerInstance::MultiLoggerInst(ref other_loggers) => {
+      LoggerInstance::MultiLoggerInst(ref other_loggers) => {
         for logger in other_loggers.iter() {
           let formatted_msg = format!("[{}] -- {}", logger, message);
-          task_info.write_formatted_message(logger, level, formatted_msg);
+          task_info.write_formatted_message(logger, level, &formatted_msg);
         }
       }
+    }
+  }
+
+  fn logger_type_name(&self) -> &'static str {
+    match *self {
+      LoggerInstance::StdoutLoggerInst => "StdoutLogger",
+      LoggerInstance::StderrLoggerInst => "StderrLogger",
+      LoggerInstance::FileLoggerInst(_,_) => "FileLogger",
+      LoggerInstance::MultiLoggerInst(_) => "MultiLogger"
     }
   }
 }
 
 impl LoggerTaskInfo{
-  fn write_message(&self, logger_name: &str, msg_level: LogLevel, msg: String) {
+  fn new() -> LoggerTaskInfo {
+    let mut task =
+      LoggerTaskInfo{
+        loggers: HashMap::new(),
+        level_strings: HashMap::new(),
+        disabled: HashMap::new()};
+    task.add_logger(
+      INTERNAL_LOGGER_NAME.to_string(),
+      level::DEFAULT,
+      LoggerOutput::StdoutLog);
+    task
+  }
+  fn write_message<MsgTy:Borrow<str>>(&self, logger_name: &str, msg_level: LogLevel, msg: MsgTy) {
     self.write_formatted_message(
       logger_name,
       msg_level,
-      format!("[{}] {}: {}", logger_name, self.level_string(msg_level), msg));
+      &format!("[{}] {}: {}", logger_name, self.level_string(msg_level), msg.borrow()));
   }
 
-  fn write_formatted_message(&self, logger_name: &str, msg_level: LogLevel, msg: String) {
+  fn write_formatted_message(&self, logger_name: &str, msg_level: LogLevel, msg: &str) {
+    if self.disabled.contains_key(logger_name) {
+      return;
+    }
     match self.loggers.get(logger_name) {
       Some(&(logger_level, ref logger)) => {
         if msg_level <= logger_level {
@@ -115,11 +145,6 @@ impl LoggerTaskInfo{
   }
 
   fn add_file_logger(&mut self, logger:String, level:LogLevel, path:PathBuf) {
-    if !self.loggers.get(&logger).is_none() {
-      //TODO add an internal event logger so we can log things like this
-      return;
-    }
-
     let mut previous_file_logger:Option<LoggerInstance> = None;
 
     for &(_, ref known_logger) in self.loggers.values() {
@@ -134,52 +159,118 @@ impl LoggerTaskInfo{
       }
     }
 
-    if let Some(prev_logger) = previous_file_logger {
-      self.loggers.insert(logger,
-                          (level, prev_logger));
-      return;
-    }
-
-    let file = match File::create(&path) {
-      Ok(x) => x,
-      Err(_) => {
-        if let Some(path_str) = path.as_os_str().to_str() {
-          panic!("Could not create log file {}", path_str);
-        } else {
-          panic!("Could not create a log file (name is not printable)");
+    let file_logger_instance =
+      if let Some(prev_logger) = previous_file_logger {
+        Some(prev_logger)
+      } else {
+        match File::create(&path) {
+          Ok(new_file) =>
+            Some(LoggerInstance::FileLoggerInst(Rc::new(RefCell::new(new_file)), path.clone())),
+          Err(_) => {
+            None
+          }
         }
+      };
+    match file_logger_instance {
+      Some(instance) => {
+        self.loggers.insert(
+          logger,
+          (level, instance));
       }
-    };
-
-    self.loggers.insert(logger,
-                        (level, LoggerInstance::FileLoggerInst(Rc::new(RefCell::new(file)), path)));
+      None =>
+        if let Some(path_str) = path.as_os_str().to_str() {
+          self.log_internal(
+            format!("Could not create log file {}", path_str),
+            level::INTERNAL_EXTREME_FAIL);
+        } else {
+          self.log_internal(
+            "Could not create a log file.  Name is not printable.",
+            level::INTERNAL_EXTREME_FAIL);
+        }
+    }
   }
 
   fn add_multi_logger(&mut self, logger:String, level:LogLevel, direct_to:Vec<String>){
-    if !self.loggers.get(&logger).is_none() {
-      //TODO add an internal event logger so we can log things like this
-      return;
-    }
-
     let instance = LoggerInstance::MultiLoggerInst(direct_to);
     self.loggers.insert(logger,
                         (level, instance));
   }
 
-  fn add_simple_logger(&mut self, logger:String, level: LogLevel, log_ty: LoggerOutput){
+  fn add_logger(&mut self, logger:String, level: LogLevel, log_ty: LoggerOutput) {
+    let disabled_status = self.disabled.get(&logger).map(|b| *b);
     if !self.loggers.get(&logger).is_none() {
-      //TODO add an internal event logger so we can log things like this
-      return;
+      self.log_internal(
+        format!(
+          "Cannot re-register the {} logger.",
+          logger),
+        level::INFO);
+    } else if let Some(log_attempt) = disabled_status {
+      if log_attempt {
+        self.log_internal(
+          format!(
+            "An attempt to register a logger for name {} was rejected as that name is disabled.",
+            logger),
+          level::DEBUG);
+      }
+    } else {
+      match log_ty {
+        LoggerOutput::StdoutLog => {
+          self.loggers.insert(logger, (level, LoggerInstance::StdoutLoggerInst));
+        }
+        LoggerOutput::StderrLog => {
+          self.loggers.insert(logger, (level, LoggerInstance::StderrLoggerInst));
+        }
+        LoggerOutput::FileLog(path) => {
+          self.add_file_logger(logger, level, path);
+        }
+        LoggerOutput::MultiLog(others) => {
+          self.add_multi_logger(logger, level, others);
+        }
+      };
     }
+  }
 
-    let simple_inst = match log_ty {
-      LoggerOutput::StdoutLog => LoggerInstance::StdoutLoggerInst,
-      LoggerOutput::StderrLog => LoggerInstance::StderrLoggerInst,
-      _ => panic!("Unsupported logger type for add_simple_logger.")
-    };
+  fn redirect_logger(&mut self, logger_name:String, level:Option<LogLevel>, log_ty: LoggerOutput) {
+    let logger = self.loggers.remove(&logger_name);
+    match logger {
+      None => {
+        self.add_logger(logger_name, level.unwrap_or(level::DEFAULT), log_ty);
+        self.log_internal("Attempted to redirect non-existant logger", level::WARNING);
+      }
+      Some((old_level, _)) => {
+        let new_level = level.unwrap_or(old_level);
+        self.add_logger(logger_name, new_level, log_ty);
+      }
+    }
+  }
 
-    self.loggers.insert(logger,
-                        (level, simple_inst));
+  fn disable_logger(&mut self, logger:String, log: bool) {
+    let removed = self.loggers.remove(&logger);
+
+    if log {
+      if let Some((_, log_inst)) = removed {
+        self.log_internal(
+          format!(
+            "{} {} has been removed and disabled. Logger was in use.",
+            log_inst.logger_type_name(),
+            logger),
+          level::DEBUG);
+      } else {
+        self.log_internal(
+          format!(
+            "Logger name {} has been disabled. Logger was not in use.",
+            logger),
+          level::DEBUG);
+      }
+    }
+    self.disabled.insert(logger, log);
+  }
+
+  fn log_internal<MsgTy: Borrow<str>>(&mut self, message: MsgTy, level: LogLevel) {
+    self.write_message(
+      INTERNAL_LOGGER_NAME,
+      level,
+      message);
   }
 }
 
@@ -189,21 +280,15 @@ pub fn spawn_logger(rx: Receiver<LoggerMessage>) -> JoinGuard<'static, ()>{
 }
 
 fn logger_main(rx: Receiver<LoggerMessage>){
-  let mut task_info = LoggerTaskInfo{loggers: HashMap::new(), level_strings: HashMap::new()};
+  let mut task_info = LoggerTaskInfo::new();
   loop {
     match rx.recv() {
       Ok(LoggerMessage::LogMessage(logger, level, message)) => {
         task_info.write_message(logger.as_ref(), level, message);
       }
 
-      Ok(LoggerMessage::NewLogger(logger, level, LoggerOutput::FileLog(path))) =>
-        task_info.add_file_logger(logger, level, path),
-
-      Ok(LoggerMessage::NewLogger(logger, level, LoggerOutput::MultiLog(others))) =>
-        task_info.add_multi_logger(logger, level, others),
-
-      Ok(LoggerMessage::NewLogger(logger, level, simple_logger_type)) =>
-        task_info.add_simple_logger(logger, level, simple_logger_type),
+      Ok(LoggerMessage::NewLogger(logger, level, output)) =>
+        task_info.add_logger(logger, level, output),
 
       Ok(LoggerMessage::PoisonPill) => {
         break;
@@ -211,6 +296,14 @@ fn logger_main(rx: Receiver<LoggerMessage>){
 
       Ok(LoggerMessage::RegisterLevelString(level, string)) => {
         task_info.level_strings.insert(level, string);
+      }
+
+      Ok(LoggerMessage::Disable(name, log)) => {
+        task_info.disable_logger(name, log);
+      }
+
+      Ok(LoggerMessage::RedirectLogger(logger, level_opt, output)) => {
+        task_info.redirect_logger(logger, level_opt, output);
       }
 
       Err(_) => break,

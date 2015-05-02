@@ -27,10 +27,6 @@ use internal::comm::send_logger_message;
 use internal::task::LoggerMessage;
 use std::path::PathBuf;
 
-fn feature_based_log_level() -> LogLevel{
-  level::WARNING
-}
-
 /// A logger within the Artifact logging library.
 /// The struct itself only stores the name of the
 /// logger, however, the initialization functions tell
@@ -66,32 +62,54 @@ impl Logger{
 
   /// Creates a logger which will log to the given output.
   /// This tells the backend logger task to initialize the logger.
-  #[inline(always)]
   pub fn new(name: &str, ty: LoggerOutput) -> Logger{
-    Logger::new_with_level(name, ty, feature_based_log_level())
+    Logger::new_with_level(name, ty, level::DEFAULT)
   }
 
   /// Creates a logger for the given output which logs messages at or above the given level.
   /// This also initializes the logger by telling the backend task.
-  #[inline(always)]
-  #[cfg(not(feature = "disable"))]
   pub fn new_with_level(name: &str, ty: LoggerOutput, level:LogLevel) -> Logger {
     send_logger_message(LoggerMessage::NewLogger(name.to_string(),
                                                  level,
                                                  ty));
-    Logger{name: name.to_string()}
+    Logger::access(name)
   }
 
-  #[inline(always)]
-  #[cfg(feature = "disable")]
-  pub fn new_with_level(name: &str, ty: LoggerOutput, level: LogLevel) -> Logger {
-    Logger{name : name.to_string() }
+  /// Redirects a logger to a new output location.
+  /// Returns the logger as well
+  pub fn redirect(&self, ty: LoggerOutput) {
+    send_logger_message(
+      LoggerMessage::RedirectLogger(
+        self.name.to_string(),
+        None,
+        ty));
+  }
+
+  /// Redirects a logger and changes its level
+  /// Returns the logger
+  pub fn redirect_set_level(&self, ty: LoggerOutput, level: LogLevel) {
+    send_logger_message(
+      LoggerMessage::RedirectLogger(
+        self.name.to_string(),
+        Some(level),
+        ty));
+  }
+
+  ///Prevents use of a logger name, and kills off any existing
+  ///logger instances with that name
+  pub fn disable(self) {
+    send_logger_message(LoggerMessage::Disable(self.name, true));
+  }
+
+  ///Prevents use of a logger name, kills off any existing loggers
+  ///with that name, and disables logging info about that logger
+  ///entirely.
+  pub fn disable_without_logs(self) {
+    send_logger_message(LoggerMessage::Disable(self.name, false));
   }
 
   /// Creates a new log message.  This just sends a message across
   /// the backend channel to the actual logger task.
-  #[inline(always)]
-  #[cfg(not(feature = "disable"))]
   pub fn log(&self, level: LogLevel, message:&str){
     send_logger_message(
       LoggerMessage::LogMessage(
@@ -100,43 +118,30 @@ impl Logger{
         message.to_string()));
   }
 
-  #[inline(always)]
-  #[cfg(feature = "disable")]
-  pub fn log(&self, level: LogLevel, message:&str){
-
-  }
-
-  #[inline(always)]
   pub fn wtf(&self, message:&str){
     self.log(level::WTF, message);
   }
 
-  #[inline(always)]
   pub fn critical(&self, message:&str){
     self.log(level::CRITICAL, message);
   }
 
-  #[inline(always)]
   pub fn severe(&self, message:&str){
     self.log(level::SEVERE, message);
   }
 
-  #[inline(always)]
   pub fn warning(&self, message:&str){
     self.log(level::WARNING, message)
   }
 
-  #[inline(always)]
   pub fn debug(&self, message:&str){
     self.log(level::DEBUG, message);
   }
 
-  #[inline(always)]
   pub fn info(&self, message:&str){
     self.log(level::INFO, message);
   }
 
-  #[inline(always)]
   pub fn verbose(&self, message:&str){
     self.log(level::VERBOSE, message);
   }

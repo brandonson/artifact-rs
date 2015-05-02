@@ -24,10 +24,13 @@
 pub type LogLevel = u32;
 
 ///What a Terrible Failure
-pub static WTF:      LogLevel = 100;
-pub static CRITICAL: LogLevel = 200;
-pub static SEVERE:   LogLevel = 300;
-pub static WARNING:  LogLevel = 400;
-pub static DEBUG:    LogLevel = 500;
-pub static INFO:     LogLevel = 600;
-pub static VERBOSE:  LogLevel = 700;
+pub const WTF:      LogLevel = 100;
+pub const CRITICAL: LogLevel = 200;
+pub const SEVERE:   LogLevel = 300;
+pub const WARNING:  LogLevel = 400;
+pub const DEBUG:    LogLevel = 500;
+pub const INFO:     LogLevel = 600;
+pub const VERBOSE:  LogLevel = 700;
+
+pub const DEFAULT: LogLevel = DEBUG;
+pub const INTERNAL_EXTREME_FAIL: LogLevel = WTF;

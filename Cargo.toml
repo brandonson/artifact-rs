@@ -19,7 +19,6 @@ lazy_static = "*"
 [features]
 
 no-failure-logs = []
-disable         = []
 
 [[bin]]
 
@@ -40,5 +39,15 @@ test = false
 
 [[bin]]
 name = "multi_logger"
+doc = false
+test = false
+
+[[bin]]
+name = "disable"
+doc = false
+test = false
+
+[[bin]]
+name = "redirect"
 doc = false
 test = false

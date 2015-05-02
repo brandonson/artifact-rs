@@ -106,12 +106,11 @@ fn send_logger_message_with_uninit_tls(tls_ref:&mut Option<Artifact>, message: t
     return;
   }
 
-  match *local_sender_opt.unwrap() {
-    None => panic!("Global logger task info not initialized.  Try a GlobalArtifactLib instance?"),
-    Some(ref local_sender) => {
-      send_to_logger(&local_sender.msg_tx, message);
-      *tls_ref = Some(local_sender.clone());
-    }
+  if let Some(ref local_sender) = *local_sender_opt.unwrap() {
+    send_to_logger(&local_sender.msg_tx, message);
+    *tls_ref = Some(local_sender.clone());
+  } else if !cfg!(feature = "no-failure-logs") {
+    println!("Global artifact logger not initialized.");
   }
 }
 
