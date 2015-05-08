@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014-2015 Brandon Sanderson
- *
+-2015 *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -34,19 +34,20 @@ use std::borrow::Borrow;
 use logger::LoggerOutput;
 use level;
 use level::LogLevel;
+use MessageFormatter;
 
 use std::cell::RefCell;
 
 const INTERNAL_LOGGER_NAME:&'static str = "Artifact Internal";
 
-#[derive(Clone)]
 pub enum LoggerMessage{
   PoisonPill,
   LogMessage(String, LogLevel, String),
   NewLogger(String, LogLevel, LoggerOutput),
   RedirectLogger(String, Option<LogLevel>, LoggerOutput),
   RegisterLevelString(LogLevel, String),
-  Disable(String, bool)
+  Disable(String, bool),
+  SetFormatter(String, Box<MessageFormatter>),
 }
 
 enum LoggerInstance{
@@ -60,10 +61,11 @@ struct LoggerTaskInfo{
   loggers: HashMap<String, (LogLevel, LoggerInstance)>,
   level_strings: HashMap<LogLevel, String>,
   disabled: HashMap<String, bool>,
+  formatters: HashMap<String, Box<MessageFormatter>>,
 }
 
 impl LoggerInstance{
-  fn write(&self, message:&str, level:LogLevel, task_info:&LoggerTaskInfo) {
+  fn write(&self, self_name: &str, message:&str, level:LogLevel, task_info:&LoggerTaskInfo) {
     match *self {
       LoggerInstance::StdoutLoggerInst => {
         println!("{}", message);
@@ -76,8 +78,9 @@ impl LoggerInstance{
         let _ = writeln!(file_writer.borrow_mut(), "{}", message);
       }
       LoggerInstance::MultiLoggerInst(ref other_loggers) => {
+        let formatter = task_info.formatters.get(self_name);
         for logger in other_loggers.iter() {
-          let formatted_msg = format!("[{}] -- {}", logger, message);
+          let formatted_msg = formatter.add_logger_name_to_multi_message(logger, message);
           task_info.write_formatted_message(logger, level, &formatted_msg);
         }
       }
@@ -100,18 +103,22 @@ impl LoggerTaskInfo{
       LoggerTaskInfo{
         loggers: HashMap::new(),
         level_strings: HashMap::new(),
-        disabled: HashMap::new()};
+        disabled: HashMap::new(),
+        formatters: HashMap::new()};
     task.add_logger(
       INTERNAL_LOGGER_NAME.to_string(),
       level::DEFAULT,
       LoggerOutput::StdoutLog);
     task
   }
+
   fn write_message<MsgTy:Borrow<str>>(&self, logger_name: &str, msg_level: LogLevel, msg: MsgTy) {
+    let formatter = self.formatters.get(logger_name);
+    let message = formatter.format_message(logger_name, &self.level_string(msg_level), msg.borrow());
     self.write_formatted_message(
       logger_name,
       msg_level,
-      &format!("[{}] {}: {}", logger_name, self.level_string(msg_level), msg.borrow()));
+      &message);
   }
 
   fn write_formatted_message(&self, logger_name: &str, msg_level: LogLevel, msg: &str) {
@@ -121,7 +128,7 @@ impl LoggerTaskInfo{
     match self.loggers.get(logger_name) {
       Some(&(logger_level, ref logger)) => {
         if msg_level <= logger_level {
-          logger.write(msg, msg_level, &self);
+          logger.write(logger_name, msg, msg_level, &self);
         }
       }
       None => self.handle_nonexistant_logger(logger_name)
@@ -304,6 +311,10 @@ fn logger_main(rx: Receiver<LoggerMessage>){
 
       Ok(LoggerMessage::RedirectLogger(logger, level_opt, output)) => {
         task_info.redirect_logger(logger, level_opt, output);
+      }
+
+      Ok(LoggerMessage::SetFormatter(logger, formatter)) => {
+        task_info.formatters.insert(logger, formatter);
       }
 
       Err(_) => break,

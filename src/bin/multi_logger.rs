@@ -1,7 +1,21 @@
 extern crate artifact;
 
-use artifact::{Logger, LoggerOutput, ArtifactGlobalLib};
+use artifact::{Logger, LoggerOutput, ArtifactGlobalLib, MessageFormatter, DefaultMessageFormatter};
 use artifact::level;
+
+struct MultiForm;
+
+impl MessageFormatter for MultiForm {
+  fn format_message(&self, logger_name:&str, level_string:&str, message: &str) -> String {
+    let def = DefaultMessageFormatter;
+
+    def.format_message(logger_name, level_string, message)
+  }
+
+  fn add_logger_name_to_multi_message(&self, logger_name: &str, message: &str) -> String {
+    format!("[{}] FROM {}", logger_name, message)
+  }
+}
 
 fn main() {
   let artifact_global = ArtifactGlobalLib::init();
@@ -17,6 +31,8 @@ fn main() {
           "Multi",
           LoggerOutput::MultiLog(vec!("Foo".to_string(), "STDERRLOG".to_string())),
           level::WARNING);
+
+  multi_logger.set_format(Box::new(MultiForm) as Box<MessageFormatter>);
 
   logger.debug("This will print");
   multi_logger.debug("This won't");
