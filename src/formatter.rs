@@ -23,17 +23,23 @@
 
 use std::borrow::Borrow;
 
+/// Trait for things that can format logging messages
 pub trait MessageFormatter : Send + Sync {
+  /// Format a standard message.
   fn format_message(&self, logger_name:&str, level_string: &str, message: &str) -> String;
+  /// Format for messages being sent onward by a multi-logger.
+  /// logger_name is the name of the next logger.  formatted_multi_msg is the
+  /// message as formatted by the multi-logger's format_message method.
   fn add_logger_name_to_multi_message(&self, logger_name: &str, formatted_multi_msg:&str) -> String;
 }
 
+/// Default formatter for logging messages.
 #[derive(Clone)]
 pub struct DefaultMessageFormatter;
 
 impl MessageFormatter for DefaultMessageFormatter {
   fn format_message(&self, logger_name: &str, level_string: &str, message: &str) -> String {
-    format!("[{}] -- {}: {}", logger_name, level_string, message)
+    format!("[{}, ] -- {}: {}", logger_name, level_string, message)
   }
 
   fn add_logger_name_to_multi_message(&self, logger_name: &str, formatted_multi_msg:&str) -> String {
