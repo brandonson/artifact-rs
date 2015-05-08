@@ -27,6 +27,8 @@ use internal::comm::send_logger_message;
 use internal::task::LoggerMessage;
 use std::path::PathBuf;
 
+use MessageFormatter;
+
 /// A logger within the Artifact logging library.
 /// The struct itself only stores the name of the
 /// logger, however, the initialization functions tell
@@ -106,6 +108,11 @@ impl Logger{
   ///entirely.
   pub fn disable_without_logs(self) {
     send_logger_message(LoggerMessage::Disable(self.name, false));
+  }
+
+  ///Sets the logger's format
+  pub fn set_format(&self, formatter: Box<MessageFormatter>) {
+    send_logger_message(LoggerMessage::SetFormatter(self.name.to_string(), formatter));
   }
 
   /// Creates a new log message.  This just sends a message across

@@ -89,9 +89,9 @@ pub fn send_logger_message(message: task::LoggerMessage){
     let tls_initialized = mut_cell_internal.is_some();
 
     if tls_initialized {
-      send_to_logger(&mut_cell_internal.as_ref().unwrap().msg_tx, message.clone())
+      send_to_logger(&mut_cell_internal.as_ref().unwrap().msg_tx, message)
     } else {
-      send_logger_message_with_uninit_tls(&mut *mut_cell_internal, message.clone())
+      send_logger_message_with_uninit_tls(&mut *mut_cell_internal, message)
     }
   })
 }

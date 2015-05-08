@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Brandon Sanderson
+ * Copyright (c) 2014-2015 Brandon Sanderson
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,9 +33,11 @@ use std::thread::JoinGuard;
 pub use level::LogLevel;
 pub use level::{WTF, CRITICAL, SEVERE, WARNING, DEBUG, INFO, VERBOSE};
 pub use logger::{Logger, LoggerOutput};
+pub use formatter::{MessageFormatter, DefaultMessageFormatter};
 
 pub mod level;
 pub mod logger;
+mod formatter;
 mod internal;
 
 /// Used to initialize and clean up the logger library
