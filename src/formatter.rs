@@ -39,7 +39,7 @@ pub struct DefaultMessageFormatter;
 
 impl MessageFormatter for DefaultMessageFormatter {
   fn format_message(&self, logger_name: &str, level_string: &str, message: &str) -> String {
-    format!("[{}, ] -- {}: {}", logger_name, level_string, message)
+    format!("[{}] -- {}: {}", logger_name, level_string, message)
   }
 
   fn add_logger_name_to_multi_message(&self, logger_name: &str, formatted_multi_msg:&str) -> String {

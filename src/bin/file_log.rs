@@ -23,6 +23,8 @@ fn main() {
   logger.set_format(Box::new(FooFormat) as Box<MessageFormatter>);
   logger.warning("This is a file log.");
   logger_two.debug("And we can have two loggers to one file at once.");
+  Logger::set_default_formatter(Box::new(FooFormat) as Box<MessageFormatter>);
+  logger_two.severe("This format will be different, now matching Foo's.");
 
   artifact_global.stop();
 }

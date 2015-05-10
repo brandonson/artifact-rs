@@ -30,8 +30,9 @@ use std::path::PathBuf;
 use MessageFormatter;
 
 /// A logger within the Artifact logging library.
+/// This struct is somewhat similar to an address.
 /// The struct itself only stores the name of the
-/// logger, however, the initialization functions tell
+/// logger. However, the initialization functions tell
 /// the backend what kind of logger it is, what level it logs
 /// at, and other interesting information.
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -39,7 +40,7 @@ pub struct Logger{
   name:String
 }
 
-/// Indicates what kind of output stream the logger will use.
+/// Indicates what kind of output stream a logger will use.
 #[derive(Clone, PartialEq, Eq)]
 pub enum LoggerOutput{
   FileLog(PathBuf),
@@ -55,6 +56,13 @@ pub enum LoggerOutput{
 }
 
 impl Logger{
+
+  /// Sets the default formatter.  This formatter will be
+  /// used by any logger which does not have a formatter
+  /// set for it.
+  pub fn set_default_formatter(fmtr:Box<MessageFormatter>) {
+    send_logger_message(LoggerMessage::SetDefaultFormatter(fmtr));
+  }
 
   /// Creates a Logger instance, but does not tell the
   /// backend to initialize the logger.

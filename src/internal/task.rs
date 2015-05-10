@@ -34,6 +34,8 @@ use std::borrow::Borrow;
 use logger::LoggerOutput;
 use level;
 use level::LogLevel;
+
+use formatter;
 use MessageFormatter;
 
 use std::cell::RefCell;
@@ -48,6 +50,7 @@ pub enum LoggerMessage{
   RegisterLevelString(LogLevel, String),
   Disable(String, bool),
   SetFormatter(String, Box<MessageFormatter>),
+  SetDefaultFormatter(Box<MessageFormatter>),
 }
 
 enum LoggerInstance{
@@ -62,6 +65,7 @@ struct LoggerTaskInfo{
   level_strings: HashMap<LogLevel, String>,
   disabled: HashMap<String, bool>,
   formatters: HashMap<String, Box<MessageFormatter>>,
+  default_formatter: Box<MessageFormatter>,
 }
 
 impl LoggerInstance{
@@ -78,7 +82,7 @@ impl LoggerInstance{
         let _ = writeln!(file_writer.borrow_mut(), "{}", message);
       }
       LoggerInstance::MultiLoggerInst(ref other_loggers) => {
-        let formatter = task_info.formatters.get(self_name);
+        let formatter = task_info.get_formatter(self_name);
         for logger in other_loggers.iter() {
           let formatted_msg = formatter.add_logger_name_to_multi_message(logger, message);
           task_info.write_formatted_message(logger, level, &formatted_msg);
@@ -104,7 +108,8 @@ impl LoggerTaskInfo{
         loggers: HashMap::new(),
         level_strings: HashMap::new(),
         disabled: HashMap::new(),
-        formatters: HashMap::new()};
+        formatters: HashMap::new(),
+        default_formatter: Box::new(formatter::DefaultMessageFormatter)};
     task.add_logger(
       INTERNAL_LOGGER_NAME.to_string(),
       level::DEFAULT,
@@ -112,8 +117,12 @@ impl LoggerTaskInfo{
     task
   }
 
+  fn get_formatter<'a>(&'a self, logger_name:&str) -> &'a Box<MessageFormatter> {
+    self.formatters.get(logger_name).unwrap_or(&self.default_formatter)
+  }
+
   fn write_message<MsgTy:Borrow<str>>(&self, logger_name: &str, msg_level: LogLevel, msg: MsgTy) {
-    let formatter = self.formatters.get(logger_name);
+    let formatter = self.get_formatter(logger_name);
     let message = formatter.format_message(logger_name, &self.level_string(msg_level), msg.borrow());
     self.write_formatted_message(
       logger_name,
@@ -315,6 +324,10 @@ fn logger_main(rx: Receiver<LoggerMessage>){
 
       Ok(LoggerMessage::SetFormatter(logger, formatter)) => {
         task_info.formatters.insert(logger, formatter);
+      }
+
+      Ok(LoggerMessage::SetDefaultFormatter(formatter)) => {
+        task_info.default_formatter = formatter
       }
 
       Err(_) => break,
