@@ -21,8 +21,6 @@
  *
  */
 
-use std::borrow::Borrow;
-
 /// Trait for things that can format logging messages
 pub trait MessageFormatter : Send + Sync {
   /// Format a standard message.
@@ -47,24 +45,3 @@ impl MessageFormatter for DefaultMessageFormatter {
   }
 }
 
-impl<MF : Borrow<Box<MessageFormatter>> + Sync + Send> MessageFormatter for Option<MF> {
-  fn format_message(&self, logger_name: &str, level_string: &str, message: &str) -> String {
-    match *self {
-      Some(ref mf) => mf.borrow().format_message(logger_name, level_string, message),
-      None => {
-        let dmf = DefaultMessageFormatter;
-        dmf.format_message(logger_name, level_string, message)
-      }
-    }
-  }
-
-  fn add_logger_name_to_multi_message(&self, logger_name: &str, message: &str) -> String {
-    match *self {
-      Some(ref mf) => mf.borrow().add_logger_name_to_multi_message(logger_name, message),
-      None => {
-        let dmf = DefaultMessageFormatter;
-        dmf.add_logger_name_to_multi_message(logger_name, message)
-      }
-    }
-  }
-}
