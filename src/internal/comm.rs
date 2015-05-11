@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Brandon Sanderson
+ * Copyright (c) 2014-2015 Brandon Sanderson
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -114,17 +114,11 @@ fn send_logger_message_with_uninit_tls(tls_ref:&mut Option<Artifact>, message: t
   }
 }
 
-#[cfg(not(feature = "no-failure-logs"))]
 fn send_to_logger(logger:&Sender<task::LoggerMessage>, message: task::LoggerMessage){
   match logger.send(message) {
-    Err(_) => println!("Logger task is down, could not send message."),
+    Err(_) if cfg!(not(feature = "no-failure-logs")) => println!("Logger task is down, could not send message."),
     _ => {}
   }
-}
-
-#[cfg(feature = "no-failure-logs")]
-fn send_to_logger(logger:&Sender<task::LoggerMessage>, message: task::LoggerMessage){
-  let _ = logger.send(message);
 }
 
 fn spawn_logger_task() -> (Artifact, JoinGuard<'static, ()>) {

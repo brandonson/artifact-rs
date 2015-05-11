@@ -30,4 +30,4 @@ This library desperately needs some unit tests, as there are none at the moment.
 Artifact (which is composed of all code within this, the artifact-rs github repository) is released under
 the terms of the MIT license.
 
-_Artifact, Copyright (c) 2014 Brandon Sanderson_
+_Artifact, Copyright (c) 2014-2015 Brandon Sanderson_
