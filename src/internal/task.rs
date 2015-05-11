@@ -35,7 +35,7 @@ use logger::LoggerOutput;
 use level;
 use level::LogLevel;
 
-use formatter;
+use format;
 use MessageFormatter;
 
 use std::cell::RefCell;
@@ -109,7 +109,7 @@ impl LoggerTaskInfo{
         level_strings: HashMap::new(),
         disabled: HashMap::new(),
         formatters: HashMap::new(),
-        default_formatter: Box::new(formatter::DefaultMessageFormatter)};
+        default_formatter: format::new_basic_format_instance()};
     task.add_logger(
       INTERNAL_LOGGER_NAME.to_string(),
       level::DEFAULT,

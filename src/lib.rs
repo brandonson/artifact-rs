@@ -33,11 +33,11 @@ use std::thread::JoinGuard;
 pub use level::LogLevel;
 pub use level::{WTF, CRITICAL, SEVERE, WARNING, DEBUG, INFO, VERBOSE};
 pub use logger::{Logger, LoggerOutput};
-pub use formatter::{MessageFormatter, DefaultMessageFormatter};
+pub use format::{MessageFormatter, SimpleMessageFormatter};
 
 pub mod level;
 pub mod logger;
-mod formatter;
+pub mod format;
 mod internal;
 
 /// Used to initialize and clean up the logger library

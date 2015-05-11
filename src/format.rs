@@ -33,9 +33,9 @@ pub trait MessageFormatter : Send + Sync {
 
 /// Default formatter for logging messages.
 #[derive(Clone)]
-pub struct DefaultMessageFormatter;
+pub struct SimpleMessageFormatter;
 
-impl MessageFormatter for DefaultMessageFormatter {
+impl MessageFormatter for SimpleMessageFormatter {
   fn format_message(&self, logger_name: &str, level_string: &str, message: &str) -> String {
     format!("[{}] -- {}: {}", logger_name, level_string, message)
   }
@@ -45,3 +45,6 @@ impl MessageFormatter for DefaultMessageFormatter {
   }
 }
 
+pub fn new_basic_format_instance() -> Box<MessageFormatter> {
+  Box::new(SimpleMessageFormatter)
+}
