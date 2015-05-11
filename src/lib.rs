@@ -28,6 +28,8 @@
 #[macro_use]
 extern crate lazy_static;
 
+extern crate time;
+
 use std::thread::JoinGuard;
 
 pub use level::LogLevel;

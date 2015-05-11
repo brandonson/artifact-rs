@@ -21,6 +21,9 @@
  *
  */
 
+#[cfg(feature = "time")]
+use time;
+
 /// Trait for things that can format logging messages
 pub trait MessageFormatter : Send + Sync {
   /// Format a standard message.
@@ -31,9 +34,16 @@ pub trait MessageFormatter : Send + Sync {
   fn add_logger_name_to_multi_message(&self, logger_name: &str, formatted_multi_msg:&str) -> String;
 }
 
-/// Default formatter for logging messages.
+/// Default formatter for logging messages
+/// if time info isn't available.
 #[derive(Clone)]
 pub struct SimpleMessageFormatter;
+
+/// Default formatter when time info is available.
+/// Formats according to RFC 822, with Zulu time.
+#[cfg(feature = "time")]
+#[derive(Clone)]
+pub struct ZuluTimeMessageFormatter;
 
 impl MessageFormatter for SimpleMessageFormatter {
   fn format_message(&self, logger_name: &str, level_string: &str, message: &str) -> String {
@@ -45,6 +55,23 @@ impl MessageFormatter for SimpleMessageFormatter {
   }
 }
 
+impl MessageFormatter for ZuluTimeMessageFormatter {
+  fn format_message(&self, logger_name: &str, level_string: &str, message: &str) -> String {
+    let time = time::now();
+    format!("[{}] ({}) -- {}: {}", logger_name, time.rfc822z(), level_string, message)
+  }
+
+  fn add_logger_name_to_multi_message(&self, logger_name: &str, formatted_multi_msg:&str) -> String {
+    format!("[{}] from {}", logger_name, formatted_multi_msg)
+  }
+}
+
+#[cfg(not(feature = "time"))]
 pub fn new_basic_format_instance() -> Box<MessageFormatter> {
   Box::new(SimpleMessageFormatter)
+}
+
+#[cfg(feature = "time")]
+pub fn new_basic_format_instance() -> Box<MessageFormatter> {
+  Box::new(ZuluTimeMessageFormatter)
 }

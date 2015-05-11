@@ -1,13 +1,13 @@
 extern crate artifact;
 
-use artifact::{Logger, LoggerOutput, ArtifactGlobalLib, MessageFormatter, DefaultMessageFormatter};
+use artifact::{Logger, LoggerOutput, ArtifactGlobalLib, MessageFormatter, SimpleMessageFormatter};
 use artifact::level;
 
 struct MultiForm;
 
 impl MessageFormatter for MultiForm {
   fn format_message(&self, logger_name:&str, level_string:&str, message: &str) -> String {
-    let def = DefaultMessageFormatter;
+    let def = SimpleMessageFormatter;
 
     def.format_message(logger_name, level_string, message)
   }
