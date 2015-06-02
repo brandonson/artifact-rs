@@ -55,6 +55,7 @@ impl MessageFormatter for SimpleMessageFormatter {
   }
 }
 
+#[cfg(feature = "time")]
 impl MessageFormatter for ZuluTimeMessageFormatter {
   fn format_message(&self, logger_name: &str, level_string: &str, message: &str) -> String {
     let time = time::now();

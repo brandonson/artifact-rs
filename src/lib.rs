@@ -28,6 +28,7 @@
 #[macro_use]
 extern crate lazy_static;
 
+#[cfg(feature = "time")]
 extern crate time;
 
 use std::thread::JoinGuard;
