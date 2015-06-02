@@ -145,12 +145,9 @@ impl LoggerTaskInfo{
   }
 
   fn handle_nonexistant_logger(&self, logger: &str){
-    for existing_logger in self.loggers.keys() {
-      self.write_message(existing_logger.as_ref(),
-                         level::WTF,
-                         format!("Can't log to the {} logger, it doesn't exist.", logger))
-    }
-    println!("Can't log to the {} logger, it doesn't exist.", logger);
+    self.log_internal(
+      format!("Can't log to the {} logger, it doesn't exist.", logger),
+      level::WARNING)
   }
 
   fn level_string(&self, level: LogLevel) -> String {
@@ -160,33 +157,33 @@ impl LoggerTaskInfo{
     }
   }
 
-  fn add_file_logger(&mut self, logger:String, level:LogLevel, path:PathBuf) {
-    let mut previous_file_logger:Option<LoggerInstance> = None;
-
+  fn get_logger_for_path(&self, path:&PathBuf) -> Option<LoggerInstance> {
     for &(_, ref known_logger) in self.loggers.values() {
       match known_logger {
         &LoggerInstance::FileLoggerInst(ref cell, ref prev_path) => {
-          if *prev_path == path {
-            previous_file_logger = Some(LoggerInstance::FileLoggerInst(cell.clone(), prev_path.clone()));
-            break;
+          if *prev_path == *path {
+            return Some(LoggerInstance::FileLoggerInst(cell.clone(), prev_path.clone()));
           }
         }
         _ => {}
       }
     }
+    None
+  }
 
-    let file_logger_instance =
-      if let Some(prev_logger) = previous_file_logger {
-        Some(prev_logger)
-      } else {
+  fn add_file_logger(&mut self, logger:String, level:LogLevel, path:PathBuf) {
+    let previous_file_logger:Option<LoggerInstance> = self.get_logger_for_path(&path);
+
+    let file_logger_instance = previous_file_logger.or_else(
+      ||
         match File::create(&path) {
           Ok(new_file) =>
             Some(LoggerInstance::FileLoggerInst(Rc::new(RefCell::new(new_file)), path.clone())),
           Err(_) => {
             None
           }
-        }
-      };
+        });
+
     match file_logger_instance {
       Some(instance) => {
         self.loggers.insert(
@@ -197,11 +194,11 @@ impl LoggerTaskInfo{
         if let Some(path_str) = path.as_os_str().to_str() {
           self.log_internal(
             format!("Could not create log file {}", path_str),
-            level::INTERNAL_EXTREME_FAIL);
+            level::SEVERE);
         } else {
           self.log_internal(
             "Could not create a log file.  Name is not printable.",
-            level::INTERNAL_EXTREME_FAIL);
+            level::SEVERE);
         }
     }
   }
@@ -282,7 +279,7 @@ impl LoggerTaskInfo{
     self.disabled.insert(logger, log);
   }
 
-  fn log_internal<MsgTy: Borrow<str>>(&mut self, message: MsgTy, level: LogLevel) {
+  fn log_internal<MsgTy: Borrow<str>>(&self, message: MsgTy, level: LogLevel) {
     self.write_message(
       INTERNAL_LOGGER_NAME,
       level,
