@@ -23,7 +23,7 @@
 
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
-use std::thread::{JoinGuard};
+use std::thread::JoinHandle;
 use std::thread;
 use std::collections::hash_map::HashMap;
 use std::rc::Rc;
@@ -287,9 +287,9 @@ impl LoggerTaskInfo{
   }
 }
 
-pub fn spawn_logger(rx: Receiver<LoggerMessage>) -> JoinGuard<'static, ()>{
+pub fn spawn_logger(rx: Receiver<LoggerMessage>) -> JoinHandle<()>{
   //! Spawns the main logger task
-  thread::scoped(move | | logger_main(rx))
+  thread::spawn(move | | logger_main(rx))
 }
 
 fn logger_main(rx: Receiver<LoggerMessage>){

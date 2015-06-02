@@ -21,17 +21,13 @@
  *
  */
 
-#![feature(unboxed_closures)]
-#![feature(box_syntax)]
-#![feature(scoped)]
-
 #[macro_use]
 extern crate lazy_static;
 
 #[cfg(feature = "time")]
 extern crate time;
 
-use std::thread::JoinGuard;
+use std::thread::JoinHandle;
 
 pub use level::LogLevel;
 pub use level::{WTF, CRITICAL, SEVERE, WARNING, DEBUG, INFO, VERBOSE};
@@ -45,27 +41,21 @@ mod internal;
 
 /// Used to initialize and clean up the logger library
 pub struct ArtifactGlobalLib {
-  _guard: Option<JoinGuard<'static, ()>>
+  handle: Option<JoinHandle<()>>
 }
 
 impl ArtifactGlobalLib{
-  #[inline(always)]
-  #[cfg(not(feature = "disable"))]
+
   pub fn init() -> ArtifactGlobalLib {
-    let guard = internal::comm::init_global_task();
-    ArtifactGlobalLib{_guard: guard}
+    let handle = internal::comm::init_global_task();
+    ArtifactGlobalLib{handle: handle}
   }
 
-  #[inline(always)]
-  #[cfg(feature = "disable")]
-  pub fn init() -> ArtifactGlobalLib {
-    ArtifactGlobalLib{_guard : None}
-  }
-
-  #[inline(always)]
-  pub fn stop(&self){
-    if self._guard.is_some() {
+  pub fn stop(self){
+    if let Some(thread_handle) = self.handle {
       internal::comm::stop_global_task();
+      //TODO should we provide a way to handle this?
+      let _ = thread_handle.join();
     }
   }
 
