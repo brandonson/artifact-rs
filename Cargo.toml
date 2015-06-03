@@ -20,9 +20,6 @@ lazy_static = "*"
 version = "*"
 optional = true
 
-[dev-dependencies]
-codifyle = "*"
-
 [features]
 
 no-failure-logs = []
