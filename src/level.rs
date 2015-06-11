@@ -28,9 +28,10 @@ pub const WTF:      LogLevel = 100;
 pub const CRITICAL: LogLevel = 200;
 pub const SEVERE:   LogLevel = 300;
 pub const WARNING:  LogLevel = 400;
-pub const DEBUG:    LogLevel = 500;
-pub const INFO:     LogLevel = 600;
-pub const VERBOSE:  LogLevel = 700;
+pub const INFO:     LogLevel = 500;
+pub const DEBUG:    LogLevel = 600;
+pub const TRACE:    LogLevel = 700;
+pub const VERBOSE:  LogLevel = 800;
 
 pub const DEFAULT: LogLevel = DEBUG;
 pub const INTERNAL_EXTREME_FAIL: LogLevel = WTF;
