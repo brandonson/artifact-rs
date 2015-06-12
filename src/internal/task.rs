@@ -22,7 +22,7 @@
  */
 
 use std::path::PathBuf;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::Receiver;
 use std::thread::JoinHandle;
 use std::thread;
 use std::collections::hash_map::HashMap;
@@ -39,6 +39,9 @@ use format;
 use MessageFormatter;
 
 use std::cell::RefCell;
+
+#[cfg(feature = "log")]
+use std::sync::mpsc::Sender;
 
 const INTERNAL_LOGGER_NAME:&'static str = "Artifact Internal";
 
@@ -58,6 +61,7 @@ pub enum LoggerMessage{
   Disable(String, bool),
   SetFormatter(String, Box<MessageFormatter>),
   SetDefaultFormatter(Box<MessageFormatter>),
+  #[cfg(feature = "log")]
   IsLogEnabled(String, LogLevel, Sender<bool>),
   SetDefaultLogTarget(DefaultLogTarget)
 }
@@ -361,13 +365,14 @@ fn logger_main(rx: Receiver<LoggerMessage>){
         task_info.default_formatter = formatter
       }
 
+      #[cfg(feature = "log")]
       Ok(LoggerMessage::IsLogEnabled(logger, level, send_reply)) => {
         let enabled = task_info.loggers.get(&logger)
           .map(
             |&(logger_level, _)| level < logger_level)
           .unwrap_or(task_info.default_logger != DefaultLogTarget::NoDefault);
 
-        send_reply.send(enabled);
+        let _ = send_reply.send(enabled);
       }
 
       Ok(LoggerMessage::SetDefaultLogTarget(target)) => {
