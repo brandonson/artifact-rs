@@ -32,6 +32,8 @@ pub trait MessageFormatter : Send + Sync {
   /// logger_name is the name of the next logger.  formatted_multi_msg is the
   /// message as formatted by the multi-logger's format_message method.
   fn add_logger_name_to_multi_message(&self, logger_name: &str, formatted_multi_msg:&str) -> String;
+
+  fn add_defaulting_name_to_message(&self, default_logger_name: &str, formatted_msg:&str) -> String;
 }
 
 /// Default formatter for logging messages
@@ -53,6 +55,10 @@ impl MessageFormatter for SimpleMessageFormatter {
   fn add_logger_name_to_multi_message(&self, logger_name: &str, formatted_multi_msg:&str) -> String {
     format!("[{}] from {}", logger_name, formatted_multi_msg)
   }
+
+  fn add_defaulting_name_to_message(&self, default_logger_name: &str, formatted_msg:&str) -> String {
+    format!("[{}] defaulting from {}", default_logger_name, formatted_msg)
+  }
 }
 
 #[cfg(feature = "time")]
@@ -64,6 +70,10 @@ impl MessageFormatter for ZuluTimeMessageFormatter {
 
   fn add_logger_name_to_multi_message(&self, logger_name: &str, formatted_multi_msg:&str) -> String {
     format!("[{}] from {}", logger_name, formatted_multi_msg)
+  }
+
+  fn add_defaulting_name_to_message(&self, default_logger_name: &str, formatted_msg:&str) -> String {
+    format!("[{}] defaulting from {}", default_logger_name, formatted_msg)
   }
 }
 

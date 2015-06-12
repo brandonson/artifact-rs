@@ -22,7 +22,7 @@
  */
 
 use std::path::PathBuf;
-use std::sync::mpsc::Receiver;
+use std::sync::mpsc::{Receiver, Sender};
 use std::thread::JoinHandle;
 use std::thread;
 use std::collections::hash_map::HashMap;
@@ -42,6 +42,13 @@ use std::cell::RefCell;
 
 const INTERNAL_LOGGER_NAME:&'static str = "Artifact Internal";
 
+#[derive(PartialEq, Eq, Debug)]
+pub enum DefaultLogTarget{
+  NoDefault,
+  LogToTarget(String),
+  LogToTargetNoIndicator(String),
+}
+
 pub enum LoggerMessage{
   PoisonPill,
   LogMessage(String, LogLevel, String),
@@ -51,6 +58,8 @@ pub enum LoggerMessage{
   Disable(String, bool),
   SetFormatter(String, Box<MessageFormatter>),
   SetDefaultFormatter(Box<MessageFormatter>),
+  IsLogEnabled(String, LogLevel, Sender<bool>),
+  SetDefaultLogTarget(DefaultLogTarget)
 }
 
 enum LoggerInstance{
@@ -66,6 +75,7 @@ struct LoggerTaskInfo{
   disabled: HashMap<String, bool>,
   formatters: HashMap<String, Box<MessageFormatter>>,
   default_formatter: Box<MessageFormatter>,
+  default_logger: DefaultLogTarget
 }
 
 impl LoggerInstance{
@@ -109,7 +119,8 @@ impl LoggerTaskInfo{
         level_strings: HashMap::new(),
         disabled: HashMap::new(),
         formatters: HashMap::new(),
-        default_formatter: format::new_basic_format_instance()};
+        default_formatter: format::new_basic_format_instance(),
+        default_logger: DefaultLogTarget::NoDefault};
     task.add_logger(
       INTERNAL_LOGGER_NAME.to_string(),
       level::DEFAULT,
@@ -140,14 +151,36 @@ impl LoggerTaskInfo{
           logger.write(logger_name, msg, msg_level, &self);
         }
       }
-      None => self.handle_nonexistant_logger(logger_name)
+      None => self.handle_nonexistant_logger(logger_name, msg_level, msg)
     }
   }
 
-  fn handle_nonexistant_logger(&self, logger: &str){
-    self.log_internal(
-      format!("Can't log to the {} logger, it doesn't exist.", logger),
-      level::WARNING)
+  fn handle_nonexistant_logger(&self, logger: &str, msg_level: LogLevel, msg: &str){
+    use self::DefaultLogTarget::*;
+    match self.default_logger {
+      NoDefault =>
+        self.log_internal(
+          format!("Can't log to the {} logger, it doesn't exist.", logger),
+          level::WARNING),
+      LogToTarget(ref loggername) if loggername == logger => {
+        self.log_internal(
+          format!("Default logger {} doesn't exist.", loggername),
+          level::SEVERE)
+      }
+      LogToTargetNoIndicator(ref loggername) if loggername == logger => {
+        self.log_internal(
+          format!("Default logger {} doesn't exist.", loggername),
+          level::SEVERE)
+      }
+      LogToTarget(ref loggername) => {
+        let full_message = self.get_formatter(loggername)
+              .add_defaulting_name_to_message(loggername, msg);
+        self.write_formatted_message(loggername, msg_level, &full_message);
+      }
+      LogToTargetNoIndicator(ref loggername) => {
+        self.write_formatted_message(loggername, msg_level, msg);
+      }
+    }
   }
 
   fn level_string(&self, level: LogLevel) -> String {
@@ -294,6 +327,7 @@ pub fn spawn_logger(rx: Receiver<LoggerMessage>) -> JoinHandle<()>{
 
 fn logger_main(rx: Receiver<LoggerMessage>){
   let mut task_info = LoggerTaskInfo::new();
+
   loop {
     match rx.recv() {
       Ok(LoggerMessage::LogMessage(logger, level, message)) => {
@@ -325,6 +359,19 @@ fn logger_main(rx: Receiver<LoggerMessage>){
 
       Ok(LoggerMessage::SetDefaultFormatter(formatter)) => {
         task_info.default_formatter = formatter
+      }
+
+      Ok(LoggerMessage::IsLogEnabled(logger, level, send_reply)) => {
+        let enabled = task_info.loggers.get(&logger)
+          .map(
+            |&(logger_level, _)| level < logger_level)
+          .unwrap_or(task_info.default_logger != DefaultLogTarget::NoDefault);
+
+        send_reply.send(enabled);
+      }
+
+      Ok(LoggerMessage::SetDefaultLogTarget(target)) => {
+        task_info.default_logger = target
       }
 
       Err(_) => break,

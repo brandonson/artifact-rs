@@ -15,6 +15,10 @@ impl MessageFormatter for MultiForm {
   fn add_logger_name_to_multi_message(&self, logger_name: &str, message: &str) -> String {
     format!("[{}] FROM {}", logger_name, message)
   }
+
+  fn add_defaulting_name_to_message(&self, default_logger_name: &str, formatted_msg:&str) -> String {
+    format!("[{}] defaulting from {}", default_logger_name, formatted_msg)
+  }
 }
 
 fn main() {

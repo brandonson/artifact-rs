@@ -27,6 +27,9 @@ extern crate lazy_static;
 #[cfg(feature = "time")]
 extern crate time;
 
+#[cfg(feature = "log")]
+extern crate log;
+
 use std::thread::JoinHandle;
 
 pub use level::LogLevel;
@@ -59,4 +62,12 @@ impl ArtifactGlobalLib{
     }
   }
 
+}
+
+#[cfg(feature = "log")]
+pub fn setup_log_crate_support() -> Result<(), log::SetLoggerError> {
+  log::set_logger(|max_log_level| {
+    max_log_level.set(log::LogLevelFilter::Trace);
+    Box::new(logger::ArtifactDelegateLog)
+  })
 }

@@ -20,6 +20,10 @@ lazy_static = "0.1.*"
 version = "0.1.*"
 optional = true
 
+[dependencies.log]
+version = "0.3.*"
+optional = true
+
 [features]
 
 no-failure-logs = []
@@ -28,6 +32,13 @@ default = ["time"]
 [[bin]]
 
 name = "basic_stdout_log"
+doc = false
+test = false
+
+
+[[bin]]
+
+name = "logcrate_use"
 doc = false
 test = false
 

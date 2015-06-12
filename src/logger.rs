@@ -24,8 +24,11 @@
 use level;
 use level::LogLevel;
 use internal::comm::send_logger_message;
-use internal::task::LoggerMessage;
+use internal::task::{LoggerMessage, DefaultLogTarget};
 use std::path::PathBuf;
+
+#[cfg(feature = "log")]
+pub use self::logsupport::*;
 
 use MessageFormatter;
 
@@ -118,6 +121,23 @@ impl Logger{
     send_logger_message(LoggerMessage::Disable(self.name, false));
   }
 
+  /// Sets the default logger to be this logger.
+  pub fn set_as_default(&self) {
+    send_logger_message(
+      LoggerMessage::SetDefaultLogTarget(
+        DefaultLogTarget::LogToTarget(self.name.to_string())))
+  }
+
+  /// Sets the default logger to be this logger, silently.
+  /// This means that all logs to an unknown logger will be directed
+  /// to this logger.  However, no addition to the message will be made
+  /// by this logger.
+  pub fn set_as_silent_default(&self) {
+    send_logger_message(
+      LoggerMessage::SetDefaultLogTarget(
+        DefaultLogTarget::LogToTargetNoIndicator(self.name.to_string())))
+  }
+
   ///Sets the logger's format
   pub fn set_format(&self, formatter: Box<MessageFormatter>) {
     send_logger_message(LoggerMessage::SetFormatter(self.name.to_string(), formatter));
@@ -163,3 +183,53 @@ impl Logger{
 }
 
 
+#[cfg(feature = "log")]
+mod logsupport{
+  use internal::task::LoggerMessage;
+  use std::sync::mpsc::channel;
+  use internal::comm::send_logger_message;
+  use level;
+
+  use log;
+
+  pub struct ArtifactDelegateLog;
+
+  impl log::Log for ArtifactDelegateLog {
+    fn enabled(&self, metadata: &log::LogMetadata) -> bool {
+      //TODO can we make this work better
+      let (tx, rx) = channel();
+
+      send_logger_message(
+        LoggerMessage::IsLogEnabled(
+          metadata.target().to_owned(),
+          to_internal_level(metadata.level()),
+          tx));
+
+      match rx.recv() {
+        Ok(rval) => rval,
+        _ => false
+      }
+    }
+
+    fn log(&self, record:&log::LogRecord){
+      send_logger_message(
+        LoggerMessage::LogMessage(
+          record.target().to_owned(),
+          to_internal_level(record.level()),
+          format!("{}", record.args())));
+    }
+  }
+
+  #[cfg(feature = "log")]
+  fn to_internal_level(lvl: log::LogLevel) -> level::LogLevel {
+    use log::LogLevel::*;
+
+    match lvl {
+      Error => level::SEVERE,
+      Warn => level::WARNING,
+      Info => level::INFO,
+      Debug => level::DEBUG,
+      Trace => level::TRACE
+    }
+  }
+}
