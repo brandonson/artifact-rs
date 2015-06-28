@@ -43,7 +43,7 @@ use std::cell::RefCell;
 #[cfg(feature = "log")]
 use std::sync::mpsc::Sender;
 
-const INTERNAL_LOGGER_NAME:&'static str = "Artifact Internal";
+pub const INTERNAL_LOGGER_NAME:&'static str = "Artifact Internal";
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum DefaultLogTarget{

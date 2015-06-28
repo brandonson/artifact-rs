@@ -22,7 +22,7 @@ impl MessageFormatter for MultiForm {
 }
 
 fn main() {
-  let artifact_global = ArtifactGlobalLib::init();
+  let _artifact_global = ArtifactGlobalLib::init();
 
   let logger = Logger::new_with_level("Foo",
                                       LoggerOutput::StdoutLog,
@@ -42,6 +42,4 @@ fn main() {
   multi_logger.debug("This won't");
   multi_logger.warning("This will go to stdout");
   multi_logger.critical("This will print to both.");
-
-  artifact_global.stop();
 }

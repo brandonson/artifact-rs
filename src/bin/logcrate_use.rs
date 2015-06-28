@@ -24,7 +24,7 @@ use artifact::level;
 use artifact;
 
 pub fn main() {
-  let global = ArtifactGlobalLib::init();
+  let _global = ArtifactGlobalLib::init();
   artifact::setup_log_crate_support().unwrap();
   let default_log = Logger::new_with_level("Foo", LoggerOutput::StdoutLog, level::TRACE);
   default_log.set_as_default();
@@ -34,8 +34,6 @@ pub fn main() {
   default_log.set_as_silent_default();
 
   info!("This log will have no indication that it defaulted.");
-
-  global.stop()
 }
 
 }

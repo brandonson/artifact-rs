@@ -20,7 +20,7 @@ impl MessageFormatter for FooFormat {
 }
 
 fn main() {
-  let artifact_global = ArtifactGlobalLib::init();
+  let _artifact_global = ArtifactGlobalLib::init();
 
   let logger = Logger::new("Foo", LoggerOutput::FileLog(PathBuf::from("foolog.log")));
   let logger_two = Logger::new_with_level("Bar", LoggerOutput::FileLog(PathBuf::from("foolog.log")), DEBUG);
@@ -29,6 +29,4 @@ fn main() {
   logger_two.debug("And we can have two loggers to one file at once.");
   Logger::set_default_formatter(Box::new(FooFormat) as Box<MessageFormatter>);
   logger_two.severe("This format will be different, now matching Foo's.");
-
-  artifact_global.stop();
 }

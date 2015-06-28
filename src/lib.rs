@@ -53,15 +53,15 @@ impl ArtifactGlobalLib{
     let handle = internal::comm::init_global_task();
     ArtifactGlobalLib{handle: handle}
   }
+}
 
-  pub fn stop(self){
-    if let Some(thread_handle) = self.handle {
+impl Drop for ArtifactGlobalLib {
+  fn drop(&mut self) {
+    if let Some(thread_handle) = self.handle.take() {
       internal::comm::stop_global_task();
-      //TODO should we provide a way to handle this?
       let _ = thread_handle.join();
     }
   }
-
 }
 
 #[cfg(feature = "log")]

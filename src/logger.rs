@@ -30,6 +30,8 @@ use std::path::PathBuf;
 #[cfg(feature = "log")]
 pub use self::logsupport::*;
 
+use internal::task::INTERNAL_LOGGER_NAME;
+
 use MessageFormatter;
 
 /// A logger within the Artifact logging library.
@@ -71,6 +73,14 @@ impl Logger{
   /// backend to initialize the logger.
   pub fn access(name: &str) -> Logger {
     Logger{name: name.to_string()}
+  }
+
+  /// Accesses the Artifact library's internal logger.
+  /// This can be redirected or reformatted to cause the
+  /// internal logger to log however you need.
+  /// By default, the internal logger logs to stdout.
+  pub fn access_internal_logger() -> Logger {
+    Logger::access(INTERNAL_LOGGER_NAME)
   }
 
   /// Creates a logger which will log to the given output.
