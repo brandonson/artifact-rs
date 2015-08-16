@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["format",""],["level",""],["logger",""]],"struct":[["ArtifactGlobalLib","Used to initialize and clean up the logger library"]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["CRITICAL",""],["DEBUG",""],["DEFAULT",""],["INFO",""],["INTERNAL_EXTREME_FAIL",""],["SEVERE",""],["TRACE",""],["VERBOSE",""],["WARNING",""],["WTF","What a Terrible Failure"]],"type":[["LogLevel",""]]});
