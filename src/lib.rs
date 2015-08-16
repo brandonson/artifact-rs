@@ -36,6 +36,8 @@ pub use level::LogLevel;
 pub use level::{WTF, CRITICAL, SEVERE, WARNING, DEBUG, INFO, TRACE, VERBOSE};
 pub use logger::{Logger, LoggerOutput};
 pub use format::{MessageFormatter, SimpleMessageFormatter, NoForwardingIndicationFormatter};
+#[cfg(feature = "time")]
+pub use format::ZuluTimeMessageFormatter;
 
 pub mod level;
 pub mod logger;
