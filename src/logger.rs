@@ -187,6 +187,10 @@ impl Logger{
     self.log(level::INFO, message);
   }
 
+  pub fn trace(&self, message:&str) {
+    self.log(level::TRACE, message);
+  }
+
   pub fn verbose(&self, message:&str){
     self.log(level::VERBOSE, message);
   }
