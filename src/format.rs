@@ -86,3 +86,17 @@ pub fn new_basic_format_instance() -> Box<MessageFormatter> {
 pub fn new_basic_format_instance() -> Box<MessageFormatter> {
   Box::new(ZuluTimeMessageFormatter)
 }
+
+pub struct NoForwardingIndicationFormatter<T>(pub T) where T: MessageFormatter;
+
+impl<F> MessageFormatter for NoForwardingIndicationFormatter<F> where F: MessageFormatter{
+  fn format_message(&self, logger_name: &str, level_string: &str, message: &str) -> String {
+    self.0.format_message(logger_name, level_string, message)
+  }
+  fn add_logger_name_to_multi_message(&self, _: &str, msg: &str) -> String {
+    msg.to_string()
+  }
+  fn add_defaulting_name_to_message(&self, _: &str, msg: &str) -> String {
+    msg.to_string()
+  }
+}

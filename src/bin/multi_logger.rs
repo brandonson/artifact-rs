@@ -1,6 +1,6 @@
 extern crate artifact;
 
-use artifact::{Logger, LoggerOutput, ArtifactGlobalLib, MessageFormatter, SimpleMessageFormatter};
+use artifact::{Logger, LoggerOutput, ArtifactGlobalLib, MessageFormatter, SimpleMessageFormatter, NoForwardingIndicationFormatter};
 use artifact::level;
 
 struct MultiForm;
@@ -42,4 +42,6 @@ fn main() {
   multi_logger.debug("This won't");
   multi_logger.warning("This will go to stdout");
   multi_logger.critical("This will print to both.");
+  multi_logger.set_format(Box::new(NoForwardingIndicationFormatter(MultiForm)));
+  multi_logger.severe("There won't be any indication this got forwarded");
 }
