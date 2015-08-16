@@ -8,8 +8,8 @@ fn main() {
 
   let logger = Logger::new_with_level("Foo",
                                       LoggerOutput::StdoutLog,
-                                      level::DEBUG);
-  logger.debug("This will print");
-  logger.info("But this won't");
+                                      level::TRACE);
+  logger.trace("This will print");
+  logger.verbose("But this won't");
   logger.critical("This definitely will.");
 }

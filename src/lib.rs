@@ -33,7 +33,7 @@ extern crate log;
 use std::thread::JoinHandle;
 
 pub use level::LogLevel;
-pub use level::{WTF, CRITICAL, SEVERE, WARNING, DEBUG, INFO, VERBOSE};
+pub use level::{WTF, CRITICAL, SEVERE, WARNING, DEBUG, INFO, TRACE, VERBOSE};
 pub use logger::{Logger, LoggerOutput};
 pub use format::{MessageFormatter, SimpleMessageFormatter};
 

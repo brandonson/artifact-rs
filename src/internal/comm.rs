@@ -59,6 +59,7 @@ pub fn init_global_task() -> Option<JoinHandle<()>> {
     register_level(&logger_task_sender, "WARNING", level::WARNING);
     register_level(&logger_task_sender, "DEBUG", level::DEBUG);
     register_level(&logger_task_sender, "INFO", level::INFO);
+    register_level(&logger_task_sender, "TRACE", level::TRACE);
     register_level(&logger_task_sender, "VERBOSE", level::VERBOSE);
 
     *g_logger = Some(logger_task_sender);
